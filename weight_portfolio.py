@@ -3,70 +3,71 @@ import pandas_datareader.data as pd_web
 
 
 def data_download(symbol, time_period):
-    # Nacita data z Yahoo; vstup: jeden symbol, perioda; vystup: tabulka s datami
+    # Load market data from Yahoo.
+    # Input: one symbol, time period.
+    # Output: dataframe with current prices
 
-    # Definovanie dnesneho dna, zaciatku a konca
+    # Setup of today, begin, end
     today = date.today()
-    # Nepocitame dnesny den, chceme vcerajsiu close cenu
+    # We dont need todays price, we need yeaterdays close price
     end = today - timedelta(days=1)
-    # Ked nepocitame dnesny den, musime zaciatok posunut o jeden den dozadu
     begin = today - timedelta(days=(time_period + 1))
-    # print()
-    # print('Dnes: ', today)
-    # print('Zaciatok: ', begin)
-    # print('Koniec', end)
-    # print()
 
-    # Nacitanie dat
+    # Data loading
     print('Loading ', symbol)
     data_values = pd_web.DataReader(symbol, 'yahoo', begin, end)
 
-    # Ak je pocet riadkov mensi ako time_period+1 (predchadzajuci close), posun zaciatok o jeden den dozadu
+    # If number of days is lower than time period+1 (for calculation of ATR we need previous day close
+    # decrease begin date and load again
     while len(data_values.index) < (time_period+1):
         begin = begin - timedelta(days=1)
         data_values = pd_web.DataReader(symbol, 'yahoo', begin, end)
 
-    # Formatovanie tabulky
-    data_values.reset_index(inplace=True)        # Datum bude index
+    # Dataframe format
+    data_values.reset_index(inplace=True)        # Set date as index
     data_values.set_index("Date", inplace=True)
-    data_values = data_values[['High', 'Low', 'Open', 'Close']]  # Orezanie stlpcov
-    data_values = data_values.round(2)  # zaokruhlenie ceny
+    data_values = data_values[['High', 'Low', 'Open', 'Close']]  # Cut off columns
+    data_values = data_values.round(2)  # Round price
 
-    # Vrati Pandas dataframe s cenami
+    # Dataframe with all prices
     return data_values
 
 
 def count_atr(downloaded_data, atr_time_period):
-    # Vypocet ATR, vstup: jeden symbol, perioda; vystup: posledna hodnota ATR
+    # Calculation of ATR.
+    # Input: Dataframe with prices, time period.
+    # Output: Current ATR
 
-    # Nacitanie dat
+    # Loading prices
     values = downloaded_data
 
-    # Vytvorime novy stlpec- predchadzajuce Close (Cp)
+    # Creating new column- previous day close (Cp)
     values['Cp'] = values['Close'].shift(1)
-    # Nove stlpce pre pomocne vypocty
+    # New columns for formula
     values['H-L'] = values['High'] - values['Low']
     values['H-Cp'] = abs(values['High'] - values['Cp'])
     values['L-Cp'] = abs(values['Low'] - values['Cp'])
-    # Musime skopirovat vypocitane stlpce do noveho dataframu
+    # Copy of dataframe with new columns
     values_atr = values[['H-L', 'H-Cp', 'L-Cp']].copy()
-    # Najdeme najvacsiu hodnotu, to je True Range
+    # Calculating True Range- highest value of
     values_atr['TR'] = values_atr.max(axis=1, skipna=True)
-    # Spravime EMA nad True Range, to je ATR
+    # Exponential moving average on True range- ATR
     values_atr['ATR'] = values_atr['TR'].ewm(span=atr_time_period).mean().round(2)
 
-    # Vrati poslednu hodnotu ATR pre dany symbol
+    # Return value of ATR
     return values_atr.iloc[-1][-1]
 
 
 def count_weight(collected_data, account):
-    # Vypocet vahy podla ATR, cim vacsie ATR, tym mensia vaha
-    # Vstup: cena a ATR pre jeden symbol; vystup: doplni do tabulky vahu a pocet
+    # Calculation weight based on ATR, higher ATR is lower weight
+    # Input: Dataframe with price and ATR, account
+    # Output: Dataframe with price, ATR, weight, number of shares for each symbol
 
     suma_atr = collected_data['ATR'].sum()
-    # Vaha, vzorec: (1-ATR/Suma ATR)/(pocet riadkov-1)
-    collected_data['Vaha'] = ((1 - collected_data['ATR'] / suma_atr) / (len(collected_data.index) - 1))
-    #
-    collected_data['Pocet akci'] = (collected_data['Vaha'] * account / collected_data['Close'])
+    # Calculation weight, formula= (1-ATR/Sum of ATRs)/(number of symbols -1)
+    collected_data['Weight'] = ((1 - collected_data['ATR'] / suma_atr) / (len(collected_data.index) - 1)).round(3)
+    # Number of shares based on weight, current price and account
+    collected_data['Shares'] = (collected_data['Weight'] * account / collected_data['Close']).round(2)
 
+    # Return dataframe with: Symbo, Price, ATR, Weight, Shares
     return collected_data

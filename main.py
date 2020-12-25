@@ -1,21 +1,28 @@
 # todo: vypisat datum za ktory mame data
-# todo: vaha pre jeden symbol
-# todo: translate to EN
-
+# todo: format output
+# Script will take current market data from Yahoo
+# Count ATR (Average True Range)- volatility
+# Weigh each symbol by ATR in reverse order (higher ATR=lower weight)
+# Divide account among symbols- how many shares you can buy
 
 import weight_portfolio
 import pandas as pd
 
-symbols = ['AAPL', 'SPY']
+# List of symbols you want to use
+symbols = ['AAPL', 'SPY', 'PFE', 'BABA']
+
+# Time period for ATR indicator
 time_period = 10
-account = 8000
+
+# Sum of account in USD
+account = 10000
 
 
 if __name__ == '__main__':
-    # Prazdny dataframe
-    collected_data = pd.DataFrame({'Symbol': [], 'Close': [], 'ATR': [], 'Vaha': [], 'Pocet akci': []})
+    # Empty dataframe
+    collected_data = pd.DataFrame({'Symbol': [], 'Close': [], 'ATR': [], 'Weight': [], 'Shares': []})
 
-    # Nacitanie ceny a ATR pre kazdy symbol
+    # Load of price and count ATR for each symbol
     for symbol in symbols:
         downloaded_data = weight_portfolio.data_download(symbol=symbol, time_period=time_period)
         atr = weight_portfolio.count_atr(downloaded_data, atr_time_period=time_period)
@@ -25,7 +32,9 @@ if __name__ == '__main__':
 
         collected_data.loc[len(collected_data.index)] = [symbol, close_price, atr, 0, 0]
 
-    # Nastav Symbol ako index
+    # Set Symbol as a index in output table
     collected_data = collected_data.set_index('Symbol')
 
+    # Print output table
+    print()
     print(weight_portfolio.count_weight(collected_data=collected_data, account=account))
