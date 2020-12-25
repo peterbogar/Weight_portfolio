@@ -1,5 +1,3 @@
-# todo: vypisat datum za ktory mame data
-# todo: format output
 # Script will take current market data from Yahoo
 # Count ATR (Average True Range)- volatility
 # Weigh each symbol by ATR in reverse order (higher ATR=lower weight)
@@ -37,4 +35,11 @@ if __name__ == '__main__':
 
     # Print output table
     print()
-    print(weight_portfolio.count_weight(collected_data=collected_data, account=account))
+    output_table = weight_portfolio.count_weight(collected_data=collected_data, account=account)
+    print(output_table)
+
+    # Print text output
+    print()
+    print('With account ', account, 'you can buy:')
+    for symbol in symbols:
+        print(int(output_table.loc[symbol, 'Shares']), 'shares of', symbol)

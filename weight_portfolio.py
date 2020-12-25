@@ -63,6 +63,9 @@ def count_weight(collected_data, account):
     # Input: Dataframe with price and ATR, account
     # Output: Dataframe with price, ATR, weight, number of shares for each symbol
 
+    print('Data are collected until', date.today()-timedelta(days=1))
+    print()
+
     suma_atr = collected_data['ATR'].sum()
     # Calculation weight, formula= (1-ATR/Sum of ATRs)/(number of symbols -1)
     collected_data['Weight'] = ((1 - collected_data['ATR'] / suma_atr) / (len(collected_data.index) - 1)).round(3)
