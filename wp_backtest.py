@@ -8,8 +8,12 @@ import pandas as pd
 import pandas_datareader as pd_web
 from datetime import date, timedelta
 
+# Symbols to do backtest on
 symbols = ['SPY', 'GLD']
-test_period_y = 10
+# Time period in YEARS how long in history to do backtest,
+# Last year is current- even if not finished yet
+test_period_y = 2
+# Time period in DAYS for ATR
 atr_period = 20
 
 current_year = date.today().year
@@ -17,12 +21,8 @@ test_begin = current_year - test_period_y + 1
 test_end = current_year + 1
 
 data_all = pd.DataFrame()
-each_month = []
 
 print()
-print(current_year)
-print(test_begin)
-print(test_end)
 
 # for symbol in symbols:
 #     print('Loading ', symbol)
@@ -30,9 +30,7 @@ print(test_end)
 #     data_all[symbol] = data['Adj Close']
 # print(data_all)
 
-
-for i in [1, 2, 3, 4, 5]:
-    part_today = date(2019, 4, i)
-    part_end = part_today
-    part_begin = part_today - timedelta(days=atr_period)
-
+for y in range(test_begin, test_end):
+    for m in range(1, 13):
+        part_today = date(y, m, 1)
+        print(part_today)
