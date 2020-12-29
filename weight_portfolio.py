@@ -55,7 +55,8 @@ def count_atr(downloaded_data, atr_time_period):
     values_atr['ATR'] = values_atr['TR'].ewm(span=atr_time_period).mean().round(2)
 
     # Return value of ATR
-    return values_atr.iloc[-1][-1]
+    # return values_atr.iloc[-1][-1] # commented due to backtest
+    return values_atr
 
 
 def count_weight(collected_data, account):
@@ -74,3 +75,22 @@ def count_weight(collected_data, account):
 
     # Return dataframe with: Symbo, Price, ATR, Weight, Shares
     return collected_data
+
+
+def data_download_for_backtest(symbol, begin, end):
+    # Load market data from Yahoo.
+    # Input: one symbol, start year, end year
+    # Output: dataframe with current prices
+
+    # Data loading
+    print('Loading ', symbol)
+    data_values = pd_web.DataReader(symbol, 'yahoo', begin, end)
+
+    # Dataframe format
+    data_values.reset_index(inplace=True)        # Set date as index
+    data_values.set_index("Date", inplace=True)
+    data_values = data_values[['High', 'Low', 'Open', 'Close']]  # Cut off columns
+    data_values = data_values.round(2)  # Round price
+
+    # Dataframe with all prices
+    return data_values
