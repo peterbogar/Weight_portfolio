@@ -25,21 +25,28 @@ data_all = pd.DataFrame()
 
 print()
 
+# for y in range(test_begin, test_end):
+#     for m in range(1, 13):
+#         # Last day in month must be 28th because of February
+#         select_date = datetime(y, m, 28)
+#
+#         # If selected date is weekend, decrease the date- check it 3x
+#         for i in [1, 2, 3, 4]:
+#             try:
+#                 data_all.loc[select_date]
+#             except KeyError:
+#                 select_date = select_date - timedelta(days=1)
+#         # print(select_date)
+
 for symbol in symbols:
     # Load data for each symbol in the list
     print('Loading ', symbol)
     data = pd_web.DataReader(symbol, 'yahoo', test_begin, test_end)
     data_all[symbol] = data['Adj Close']
 
-for y in range(test_begin, test_end):
-    for m in range(1, 13):
-        # Last day in month must be 28th because of February
-        select_date = datetime(y, m, 28)
-
-        # If selected date is weekend, decrease the date- check it 3x
-        for i in [1, 2, 3, 4]:
-            try:
-                data_all.loc[select_date]
-            except KeyError:
-                select_date = select_date - timedelta(days=1)
-        print(select_date)
+# cyklus for pre kazdy symbol
+#   nacitat x rokov
+#   v cykle pre kazdy mesiac, nacitat
+#       vypocet atr, vaha, pocet
+#       vystup: nova tabulka- kazdy mesiac: cena, pocet akcii
+#   doplnit do dalsie stlpce do existujucej tabulky
