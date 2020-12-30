@@ -55,17 +55,14 @@ def count_atr(downloaded_data, atr_time_period):
     values_atr['ATR'] = values_atr['TR'].ewm(span=atr_time_period).mean().round(2)
 
     # Return value of ATR
-    # return values_atr.iloc[-1][-1] # commented due to backtest
-    return values_atr
+    return values_atr.iloc[-1][-1]  # commented due to backtest
+    # return values_atr
 
 
 def count_weight(collected_data, account):
     # Calculation weight based on ATR, higher ATR is lower weight
     # Input: Dataframe with price and ATR, account
     # Output: Dataframe with price, ATR, weight, number of shares for each symbol
-
-    print('Data are collected until', date.today()-timedelta(days=1))
-    print()
 
     suma_atr = collected_data['ATR'].sum()
     # Calculation weight, formula= (1-ATR/Sum of ATRs)/(number of symbols -1)

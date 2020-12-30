@@ -5,15 +5,16 @@
 
 import weight_portfolio
 import pandas as pd
+from datetime import date, timedelta
 
 # List of symbols you want to use
-symbols = ['AAPL', 'SPY', 'PFE', 'BABA']
+symbols = ['SLV', 'TLT', 'XLE', 'XLF']
 
 # Time period for ATR indicator
-time_period = 10
+time_period = 20
 
 # Sum of account in USD
-account = 10000
+account = 8000
 
 
 if __name__ == '__main__':
@@ -34,6 +35,8 @@ if __name__ == '__main__':
     collected_data = collected_data.set_index('Symbol')
 
     # Print output table
+    print()
+    print('Data are collected until', date.today() - timedelta(days=1))
     print()
     output_table = weight_portfolio.count_weight(collected_data=collected_data, account=account)
     print(output_table)
