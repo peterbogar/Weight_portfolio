@@ -55,8 +55,8 @@ def count_atr(downloaded_data, atr_time_period):
     values_atr['ATR'] = values_atr['TR'].ewm(span=atr_time_period).mean().round(2)
 
     # Return value of ATR
-    return values_atr.iloc[-1][-1]  # commented due to backtest
-    # return values_atr
+    # return values_atr.iloc[-1][-1]  # commented due to backtest
+    return values_atr
 
 
 def count_weight(collected_data, account):
