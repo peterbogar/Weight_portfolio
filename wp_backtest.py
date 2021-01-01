@@ -77,6 +77,8 @@ for symbol in symbols:
 for symbol in symbols:
     close_shares_selected_date_data['Avg Close_'+symbol] = None
 
+for symbol in symbols:
+    close_shares_selected_date_data.iloc[0, close_shares_selected_date_data.columns.get_loc('Avg Close_'+symbol)] = close_shares_selected_date_data.iloc[0, close_shares_selected_date_data.columns.get_loc('Close_'+symbol)]
 
 print(close_shares_selected_date_data)
 print()
