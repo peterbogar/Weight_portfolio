@@ -1,17 +1,18 @@
 # Vstup fnkcie bude zoznam symbolov, perioda v rokoch, perioda ATR v dnoch
 # Vystup bude tabulka so zvolenou testovacou periodov (teraz koniec mesiaca)
 # A profitu pre kazdy symbol
+# TODO: pridat volbu ci chcem reinvestovat profit
 
 import pandas as pd
 from datetime import datetime, date, timedelta
 import weight_portfolio
 
 # Symbols to do backtest on
-symbols = ['SPY', 'GLD', 'AAPL']
+symbols = ['SLV', 'TLT', 'LIT', 'XLF']
 
 # Time period in YEARS how long in history to do backtest
 # Last year is current- even if not finished yet
-test_period_y = 2
+test_period_y = 1
 
 # Time period in DAYS for ATR
 atr_period = 20
@@ -45,6 +46,7 @@ def count_profit(fdiff, fclose_price, favg_price):
         return profit
     else:
         return 0
+
 
 # Set up start and end testing period
 current_year = date.today().year
@@ -141,7 +143,10 @@ for symbol in symbols:
             avg_price = close_shares_selected_date_data.iloc[index, close_shares_selected_date_data.columns.get_loc('Avg price_'+symbol)]
             close_shares_selected_date_data.iloc[index, close_shares_selected_date_data.columns.get_loc('Profit_' + symbol)] = count_profit(diff, close_price, avg_price)
 
+
 # Choose columns to be in output dataframe
 # output_data = close_shares_selected_date_data.filter(regex='Shares|Profit')
 output_data = close_shares_selected_date_data.filter(regex='Profit')
+output_data.loc['Sum', :] = output_data.sum(axis=0)
+output_data.loc[:, 'Sum'] = output_data.sum(axis=1)
 print(output_data)
