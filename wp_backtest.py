@@ -100,9 +100,10 @@ for symbol in symbols:
     close_shares_selected_date_data['Prev sh_'+symbol] = close_shares_selected_date_data['Shares_'+symbol].shift(1)
     close_shares_selected_date_data['Diff sh_'+symbol] = close_shares_selected_date_data['Shares_'+symbol] - close_shares_selected_date_data['Prev sh_'+symbol]
 
-# Create column for average price for each symbol
+# Create column for average price and profit for each symbol
 for symbol in symbols:
     close_shares_selected_date_data['Avg Close_'+symbol] = None
+    close_shares_selected_date_data['Profit_' + symbol] = None
 
 # First average price is close price for each symbol
 for symbol in symbols:
@@ -125,5 +126,9 @@ for symbol in symbols:
 
             # Count average price
             close_shares_selected_date_data.iloc[index, close_shares_selected_date_data.columns.get_loc('Avg Close_'+symbol)] = count_avg_price(diff, close_price, shares, previous_shares, previous_avg_price)
+
+            avg_price = close_shares_selected_date_data.iloc[index, close_shares_selected_date_data.columns.get_loc('Avg Close_'+symbol)]
+            # Count profit
+            close_shares_selected_date_data.iloc[index, close_shares_selected_date_data.columns.get_loc('Profit_' + symbol)] = count_profit(diff, close_price, avg_price)
 
 print(close_shares_selected_date_data)
