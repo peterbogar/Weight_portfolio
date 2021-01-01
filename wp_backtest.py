@@ -16,6 +16,33 @@ atr_period = 20
 
 account = 10000
 
+
+def count_avg_price(fdiff, fclose_price, fshares, fprevious_shares, fprevious_avg_price):
+    # Variables starts with F because of warning message
+    # ak je dif vacsi ako nula
+    # (cena * roziel + pred suma akci * pred avg cena) / nova suma akci
+    # ak je rozdiel 0 alebo menej ako nula
+    # predchadzjauca avg price
+    if fdiff > 0:
+        favg_price = ((fclose_price*fdiff)+(fprevious_shares*fprevious_avg_price))/fshares
+        return favg_price
+    else:
+        return fprevious_avg_price
+
+
+def count_profit(fdiff, fclose_price, favg_price):
+    # Variables starts with F because of warning message
+    # ak je rozdiel akci mensi ako nula
+    # (avg cena-cena) * rozdiel
+    # ak je rozdiel vacsi ako nula
+    # 0
+    if fdiff > 0:
+        profit = (favg_price-fclose_price)*fdiff
+        return profit
+    else:
+        return 0
+
+
 current_year = date.today().year
 test_begin = current_year - test_period_y
 test_end = current_year
@@ -68,22 +95,35 @@ selecet_date_data = selecet_date_data.set_index('Date')
 # Combine both dataframes, with all data and with just picked up days
 close_shares_selected_date_data = pd.merge(selecet_date_data, close_shares_data, how='left', on='Date')
 
-# Added columns for previous shares number and diferenc in shares
+# Added columns for previous shares number and difference in shares
 for symbol in symbols:
     close_shares_selected_date_data['Prev sh_'+symbol] = close_shares_selected_date_data['Shares_'+symbol].shift(1)
-    close_shares_selected_date_data['Dif sh_'+symbol] = close_shares_selected_date_data['Shares_'+symbol] - close_shares_selected_date_data['Prev sh_'+symbol]
+    close_shares_selected_date_data['Diff sh_'+symbol] = close_shares_selected_date_data['Shares_'+symbol] - close_shares_selected_date_data['Prev sh_'+symbol]
 
-
+# Create column for average price for each symbol
 for symbol in symbols:
     close_shares_selected_date_data['Avg Close_'+symbol] = None
 
+# First average price is close price for each symbol
 for symbol in symbols:
     close_shares_selected_date_data.iloc[0, close_shares_selected_date_data.columns.get_loc('Avg Close_'+symbol)] = close_shares_selected_date_data.iloc[0, close_shares_selected_date_data.columns.get_loc('Close_'+symbol)]
 
-print(close_shares_selected_date_data)
-print()
 
-# symbol = 'SPY'
-# print(len(close_shares_selected_date_data.index))
-# print(close_shares_selected_date_data.iloc[-1]['Close_'+symbol])
-# print(close_shares_selected_date_data.iloc[-1]['Shares_'+symbol])
+number_of_days = range(0, len(close_shares_selected_date_data.index))
+
+for symbol in symbols:
+    for index in number_of_days:
+        if index == 0:
+            pass
+        else:
+            # Set variables for function 'count average price'
+            diff = close_shares_selected_date_data.iloc[index, close_shares_selected_date_data.columns.get_loc('Diff sh_'+symbol)]
+            close_price = close_shares_selected_date_data.iloc[index, close_shares_selected_date_data.columns.get_loc('Close_'+symbol)]
+            shares = close_shares_selected_date_data.iloc[index, close_shares_selected_date_data.columns.get_loc('Shares_'+symbol)]
+            previous_shares = close_shares_selected_date_data.iloc[index, close_shares_selected_date_data.columns.get_loc('Prev sh_'+symbol)]
+            previous_avg_price = close_shares_selected_date_data.iloc[index-1, close_shares_selected_date_data.columns.get_loc('Avg Close_'+symbol)]
+
+            # Count average price
+            close_shares_selected_date_data.iloc[index, close_shares_selected_date_data.columns.get_loc('Avg Close_'+symbol)] = count_avg_price(diff, close_price, shares, previous_shares, previous_avg_price)
+
+print(close_shares_selected_date_data)
