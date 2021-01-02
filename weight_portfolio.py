@@ -96,3 +96,21 @@ def data_download_for_backtest(symbol, begin, end):
 
     # Dataframe with all prices
     return downloaded_data
+
+
+def count_weight_shares_for_backtest(symbols, close_atr_data, account):
+    # TODO: pridat volbu ci chcem reinvestovat profit
+    # TODO: menitelny selected date
+    # Count weight and shares number
+    for symbol in symbols:
+        # Calculation weight, formula= (1-ATR/Sum of ATRs)/(number of symbols -1)
+        close_atr_data['Weight_' + symbol] = (
+                    (1 - close_atr_data['ATR_' + symbol] / close_atr_data['ATR_sum']) / (len(symbols) - 1)).round(3)
+        # Number of shares based on weight, current price and account
+        # zaokruhkenie je matematicke, nie na nmensie cislo
+        close_atr_data['Shares_' + symbol] = (
+                    close_atr_data['Weight_' + symbol] * account / close_atr_data['Close_' + symbol]).round(0)
+
+    close_atr_weight_shares_data = close_atr_data
+
+    return close_atr_weight_shares_data
