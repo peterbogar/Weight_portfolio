@@ -93,28 +93,49 @@ def backtest_atr_weight(fsymbols, ftest_period_y, fatr_time_period, faccount):
     # Set index
     selected_date_data = selected_date_data.set_index('Date')
 
-    # Temporarly change name of dataframe due long name
-    # df = close_atr_weight_shares_selected_data
-
     # Combine both dataframes, with all data and with just picked up days
-    close_atr_weight_shares_selected_data = pd.merge(selected_date_data, close_atr_weight_shares_data, how='left', on='Date')
+    df = pd.merge(selected_date_data, close_atr_weight_shares_data, how='left', on='Date')
 
     # Added columns for previous shares number and difference in shares
     for symbol in symbols:
-        close_atr_weight_shares_selected_data['Prev shares' + symbol] = close_atr_weight_shares_selected_data['Shares_' + symbol].shift(1)
-        close_atr_weight_shares_selected_data['Diff shares' + symbol] = close_atr_weight_shares_selected_data['Shares_' + symbol] - close_atr_weight_shares_selected_data['Prev shares' + symbol]
+        df['Prev shares' + symbol] = df['Shares_' + symbol].shift(1)
+        df['Diff shares' + symbol] = df['Shares_' + symbol] - df['Prev shares' + symbol]
 
     # Create empty column for average price and profit for each symbol
     for symbol in symbols:
-        close_atr_weight_shares_selected_data['Avg price_' + symbol] = None
-        close_atr_weight_shares_selected_data['Profit_' + symbol] = None
+        df['Avg price_' + symbol] = None
+        df['Profit_' + symbol] = None
+        df['Cum profit_' + symbol] = None
 
     # Set first average price is close price for each symbol
     for symbol in symbols:
-        close_atr_weight_shares_selected_data.iloc[0, close_atr_weight_shares_selected_data.columns.get_loc('Avg price_' + symbol)] = close_atr_weight_shares_selected_data.iloc[0, close_atr_weight_shares_selected_data.columns.get_loc('Close_' + symbol)]
+        df.iloc[0, df.columns.get_loc('Avg price_' + symbol)] = df.iloc[0, df.columns.get_loc('Close_' + symbol)]
 
     # How many rebalancing are in the testing period
-    number_of_days = range(0, len(close_atr_weight_shares_selected_data.index))
+    number_of_days = range(0, len(df.index))
+
+    # For each symbol count average price and profit in separate functions
+    for symbol in symbols:
+        for index in number_of_days:
+            if index == 0:
+                pass
+            else:
+                # Set variables for function 'count average price' and 'count profit'
+                diff = df.iloc[index, df.columns.get_loc('Diff shares' + symbol)]
+                close_price = df.iloc[index, df.columns.get_loc('Close_' + symbol)]
+                shares = df.iloc[index, df.columns.get_loc('Shares_' + symbol)]
+                previous_shares = df.iloc[index, df.columns.get_loc('Prev shares' + symbol)]
+                previous_avg_price = df.iloc[index - 1, df.columns.get_loc('Avg price_' + symbol)]
+
+                # Count average price in function
+                df.iloc[index, df.columns.get_loc('Avg price_' + symbol)] = weight_portfolio.count_avg_price_for_backtest(diff, close_price, shares, previous_shares, previous_avg_price)
+
+                # Count profit in function
+                avg_price = df.iloc[index, df.columns.get_loc('Avg price_' + symbol)]
+                df.iloc[index, df.columns.get_loc('Profit_' + symbol)] = weight_portfolio.count_profit_for_backtest(diff, close_price, avg_price)
+
+    # Change dataframe name
+    close_atr_weight_shares_selected_data = df
 
     return close_atr_weight_shares_selected_data
 

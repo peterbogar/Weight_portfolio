@@ -114,3 +114,31 @@ def count_weight_shares_for_backtest(symbols, close_atr_data, account):
     close_atr_weight_shares_data = close_atr_data
 
     return close_atr_weight_shares_data
+
+
+def count_avg_price_for_backtest(fdiff, fclose_price, fshares, fprevious_shares, fprevious_avg_price):
+    # Funkicia pocita average cenu
+    # Variables starts with F because of warning message
+    # ak je dif vacsi ako nula
+    # (cena * roziel + pred suma akci * pred avg cena) / nova suma akci
+    # ak je rozdiel 0 alebo menej ako nula
+    # predchadzjauca avg price
+    if fdiff > 0:
+        favg_price = ((fclose_price*fdiff)+(fprevious_shares*fprevious_avg_price))/fshares
+        return favg_price
+    else:
+        return fprevious_avg_price
+
+
+def count_profit_for_backtest(fdiff, fclose_price, favg_price):
+    # Funkcia pocita profit
+    # Variables starts with F because of warning message
+    # ak je rozdiel akci mensi ako nula
+    # (avg cena-cena) * rozdiel
+    # ak je rozdiel vacsi ako nula
+    # 0
+    if fdiff < 0:
+        profit = round((favg_price-fclose_price)*fdiff, 2)
+        return profit
+    else:
+        return 0
