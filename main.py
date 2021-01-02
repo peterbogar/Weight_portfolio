@@ -1,48 +1,58 @@
-# Script will take current market data from Yahoo
-# Count ATR (Average True Range)- volatility
-# Weigh each symbol by ATR in reverse order (higher ATR=lower weight)
-# Divide account among symbols- how many shares you can buy
-
 import weight_portfolio
 import pandas as pd
-from datetime import date, timedelta
 
 # List of symbols you want to use
-symbols = ['SLV', 'TLT', 'XLE', 'XLF']
+symbols = ['SPY', 'GLD']
 
-# Time period for ATR indicator
-time_period = 20
+# Time period in days for ATR indicator
+atr_time_period = 20
 
 # Sum of account in USD
 account = 8000
 
 
-if __name__ == '__main__':
-    # Empty dataframe
-    collected_data = pd.DataFrame({'Symbol': [], 'Close': [], 'ATR': [], 'Weight': [], 'Shares': []})
+def current_atr_weight(fsymbols, fatr_time_period, faccount):
+    # Function will take current market data from Yahoo
+    # Count ATR (Average True Range)- volatility
+    # Weigh each symbol by ATR in reverse order (higher ATR=lower weight)
 
-    # Load of price and count ATR for each symbol
-    for symbol in symbols:
-        downloaded_data = weight_portfolio.data_download(symbol=symbol, time_period=time_period)
-        atr = weight_portfolio.count_atr(downloaded_data, atr_time_period=time_period)
+    # Empty variables
+    last_day = 0
+    symbol_close_atr_data = pd.DataFrame({'Symbol': [], 'Close': [], 'ATR': [], 'Weight': [], 'Shares': []})
 
+    # Download price and count ATR for each symbol
+    for fsymbol in fsymbols:
+        downloaded_data = weight_portfolio.data_download(symbol=fsymbol, time_period_days=atr_time_period)
+        atr_data = weight_portfolio.count_atr(downloaded_data, atr_time_period=fatr_time_period)
+
+        # Last day, last close, last ATR
         last_day = downloaded_data.index[-1]
         close_price = downloaded_data.iloc[-1][3]
+        last_atr = atr_data.iloc[-1][-1]
 
-        collected_data.loc[len(collected_data.index)] = [symbol, close_price, atr, 0, 0]
+        # Collect all data to new df
+        symbol_close_atr_data.loc[len(symbol_close_atr_data.index)] = [fsymbol, close_price, last_atr, 0, 0]
 
-    # Set Symbol as a index in output table
-    collected_data = collected_data.set_index('Symbol')
+    # Set Symbol as a index in output df
+    symbol_close_atr_data = symbol_close_atr_data.set_index('Symbol')
 
-    # Print output table
+    symbol_close_atr_weight_shares_data = weight_portfolio.count_weight_shares(close_atr_data_all=symbol_close_atr_data, account=faccount)
+
+    return symbol_close_atr_weight_shares_data, last_day
+
+
+if __name__ == '__main__':
+
+    output = current_atr_weight(symbols, atr_time_period, account)
+
+    # Print output df
     print()
-    print('Data are collected until', date.today() - timedelta(days=1))
+    print('Data are collected until', output[1])  # TODO: upravit datum, bez casu
     print()
-    output_table = weight_portfolio.count_weight(collected_data=collected_data, account=account)
-    print(output_table)
+    print(output[0])
 
     # Print text output
     print()
     print('With account ', account, 'you can buy:')
     for symbol in symbols:
-        print(int(output_table.loc[symbol, 'Shares']), 'shares of', symbol)
+        print(int(output[0].loc[symbol, 'Shares']), 'shares of', symbol)

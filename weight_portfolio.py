@@ -2,76 +2,81 @@ from datetime import date, timedelta
 import pandas_datareader.data as pd_web
 
 
-def data_download(symbol, time_period):
-    # Load market data from Yahoo.
-    # Input: one symbol, time period.
-    # Output: dataframe with current prices
+def data_download(symbol, time_period_days):
+    # Load market data from Yahoo for last X days for one symbol
+    # Input: one symbol, time period in days.
+    # Output: Dataframe with High, Low, Open, Close for each day in last time_period_days
 
     # Setup of today, begin, end
     today = date.today()
     # We dont need todays price, we need yeaterdays close price
     end = today - timedelta(days=1)
-    begin = today - timedelta(days=(time_period + 1))
+    begin = today - timedelta(days=(time_period_days + 1))
 
     # Data loading
     print('Loading ', symbol)
-    data_values = pd_web.DataReader(symbol, 'yahoo', begin, end)
+    downloaded_data = pd_web.DataReader(symbol, 'yahoo', begin, end)
 
     # If number of days is lower than time period+1 (for calculation of ATR we need previous day close
     # decrease begin date and load again
-    while len(data_values.index) < (time_period+1):
+    while len(downloaded_data.index) < (time_period_days+1):
         begin = begin - timedelta(days=1)
-        data_values = pd_web.DataReader(symbol, 'yahoo', begin, end)
+        downloaded_data = pd_web.DataReader(symbol, 'yahoo', begin, end)
 
     # Dataframe format
-    data_values.reset_index(inplace=True)        # Set date as index
-    data_values.set_index("Date", inplace=True)
-    data_values = data_values[['High', 'Low', 'Open', 'Close']]  # Cut off columns
-    data_values = data_values.round(2)  # Round price
+    downloaded_data.reset_index(inplace=True)        # Set date as index
+    downloaded_data.set_index("Date", inplace=True)
+    downloaded_data = downloaded_data[['High', 'Low', 'Open', 'Close']]  # Cut off columns
+    downloaded_data = downloaded_data.round(2)  # Round price
 
-    # Dataframe with all prices
-    return data_values
+    # Output dataframe
+    return downloaded_data
 
 
 def count_atr(downloaded_data, atr_time_period):
-    # Calculation of ATR.
-    # Input: Dataframe with prices, time period.
-    # Output: Current ATR
+    # Calculation of ATR for one symbol
+    # Input: Dataframe with High, Low, Open, Close; ATR time period.
+    # Output: Dataframe with close and ATR
 
-    # Loading prices
-    values = downloaded_data
-
-    # Creating new column- previous day close (Cp)
-    values['Cp'] = values['Close'].shift(1)
+    # Creating new column: previous day close (pClose)
+    downloaded_data['pClose'] = downloaded_data['Close'].shift(1)
     # New columns for formula
-    values['H-L'] = values['High'] - values['Low']
-    values['H-Cp'] = abs(values['High'] - values['Cp'])
-    values['L-Cp'] = abs(values['Low'] - values['Cp'])
+    downloaded_data['H-L'] = downloaded_data['High'] - downloaded_data['Low']
+    downloaded_data['H-pClose'] = abs(downloaded_data['High'] - downloaded_data['pClose'])
+    downloaded_data['L-pClose'] = abs(downloaded_data['Low'] - downloaded_data['pClose'])
     # Copy of dataframe with new columns
-    values_atr = values[['H-L', 'H-Cp', 'L-Cp']].copy()
+    values_atr = downloaded_data[['H-L', 'H-pClose', 'L-pClose']].copy()
     # Calculating True Range- highest value of
     values_atr['TR'] = values_atr.max(axis=1, skipna=True)
     # Exponential moving average on True range- ATR
+    # TODO: skontrolovat ci to dobre pocita EMA
     values_atr['ATR'] = values_atr['TR'].ewm(span=atr_time_period).mean().round(2)
 
-    # Return value of ATR
+    # Return last value of ATR
     # return values_atr.iloc[-1][-1]  # commented due to backtest
-    return values_atr
+
+    # Create output dataframe with close price+ATR
+    close_atr_data = downloaded_data[['Close']].copy()
+    close_atr_data['ATR'] = values_atr['ATR']
+
+    return close_atr_data
 
 
-def count_weight(collected_data, account):
+def count_weight_shares(close_atr_data_all, account):
     # Calculation weight based on ATR, higher ATR is lower weight
-    # Input: Dataframe with price and ATR, account
-    # Output: Dataframe with price, ATR, weight, number of shares for each symbol
+    # Input: Dataframe with prices and ATR for all symbols, account
+    # Output: Dataframe with prices, ATR, weight, number of shares for all symbol
 
-    suma_atr = collected_data['ATR'].sum()
+    sum_atr = close_atr_data_all['ATR'].sum()
     # Calculation weight, formula= (1-ATR/Sum of ATRs)/(number of symbols -1)
-    collected_data['Weight'] = ((1 - collected_data['ATR'] / suma_atr) / (len(collected_data.index) - 1)).round(3)
+    close_atr_data_all['Weight'] = ((1 - close_atr_data_all['ATR'] / sum_atr) / (len(close_atr_data_all.index) - 1)).round(3)
     # Number of shares based on weight, current price and account
-    collected_data['Shares'] = (collected_data['Weight'] * account / collected_data['Close']).round(2)
+    close_atr_data_all['Shares'] = (close_atr_data_all['Weight'] * account / close_atr_data_all['Close']).round(2)
 
-    # Return dataframe with: Symbo, Price, ATR, Weight, Shares
-    return collected_data
+    symbol_close_atr_weight_shares_data = close_atr_data_all
+
+    # Return dataframe with: Symbol, Price, ATR, Weight, Shares
+    return symbol_close_atr_weight_shares_data
 
 
 def data_download_for_backtest(symbol, begin, end):
