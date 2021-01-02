@@ -1,7 +1,7 @@
 # Vstup fnkcie bude zoznam symbolov, perioda v rokoch, perioda ATR v dnoch
 # Vystup bude tabulka so zvolenou testovacou periodov (teraz koniec mesiaca)
 # A profitu pre kazdy symbol
-# TODO: pridat volbu ci chcem reinvestovat profit
+
 
 import pandas as pd
 from datetime import datetime, date, timedelta

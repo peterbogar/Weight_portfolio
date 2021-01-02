@@ -99,7 +99,6 @@ def data_download_for_backtest(symbol, begin, end):
 
 
 def count_weight_shares_for_backtest(symbols, close_atr_data, account):
-    # TODO: pridat volbu ci chcem reinvestovat profit
     # TODO: menitelny selected date
     # Count weight and shares number
     for symbol in symbols:

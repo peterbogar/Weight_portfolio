@@ -2,8 +2,6 @@ import weight_portfolio
 import pandas as pd
 from datetime import date, datetime, timedelta
 
-# TODO: vaha pre jeden symbol
-
 # List of symbols you want to use
 symbols = ['SPY', 'GLD']
 
@@ -14,7 +12,8 @@ atr_time_period = 20
 test_period_y = 1
 
 # Sum of account in USD
-account = 8000
+account = 10000
+# Reinvestovanie profitu je prilis zlozite na backtest
 
 # Display all columns in pandas dataframe
 pd.set_option('display.max_columns', None)
@@ -134,6 +133,13 @@ def backtest_atr_weight(fsymbols, ftest_period_y, fatr_time_period, faccount):
                 avg_price = df.iloc[index, df.columns.get_loc('Avg price_' + symbol)]
                 df.iloc[index, df.columns.get_loc('Profit_' + symbol)] = weight_portfolio.count_profit_for_backtest(diff, close_price, avg_price)
 
+    # # Very ugly way to select columns and count cumulative sumary
+    # output_data1 = close_shares_selected_date_data.filter(regex='Profit')
+    # output_data2 = output_data1.copy()
+    # # output_data.loc['Sum', :] = output_data.cumsum()
+    # output_data = output_data2.cumsum()
+    # output_data['Sum'] = output_data.sum(axis=1)
+
     # Change dataframe name
     close_atr_weight_shares_selected_data = df
 
@@ -144,7 +150,7 @@ if __name__ == '__main__':
 
     print(backtest_atr_weight(symbols, test_period_y, atr_time_period, account))
 
-    # output = current_atr_weight(symbols, atr_time_period, account)
+    # output = current_atr_weight(symbols, atr_time_period, initial_account)
     #
     # # Print output df
     # print()
