@@ -1,6 +1,6 @@
 import weight_portfolio
 import pandas as pd
-from datetime import date
+from datetime import date, datetime, timedelta
 
 # TODO: vaha pre jeden symbol
 
@@ -11,7 +11,7 @@ symbols = ['SPY', 'GLD']
 atr_time_period = 20
 
 # Time period in years to backtest
-test_period_y = 2
+test_period_y = 1
 
 # Sum of account in USD
 account = 8000
@@ -72,7 +72,51 @@ def backtest_atr_weight(fsymbols, ftest_period_y, fatr_time_period, faccount):
     # Count weight and shares for each symbol for each day
     close_atr_weight_shares_data = weight_portfolio.count_weight_shares_for_backtest(symbols, close_atr_data, faccount)
 
-    return close_atr_weight_shares_data
+    # TODO: prerobit na modifikovatelne
+    # close_atr_weight_shares_data obsahuje data za kazy den, ja potrebujem len niektore dni
+    # Time period for rebalancing, currently once a month
+    # Pick up one day in each month, create new dataframe with just Date-index
+    selected_date_data = pd.DataFrame({'Date': []})
+    for y in range(test_begin, test_end):
+        for m in range(1, 13):
+            # Last day in month must be 28th because of February
+            select_date = datetime(y, m, 28)
+
+            # If selected date is weekend, decrease the date, check it 4x
+            for i in [1, 2, 3, 4]:
+                try:
+                    close_atr_weight_shares_data.loc[select_date]
+                except KeyError:
+                    select_date = select_date - timedelta(days=1)
+            selected_date_data.loc[len(selected_date_data.index)] = [select_date]
+
+    # Set index
+    selected_date_data = selected_date_data.set_index('Date')
+
+    # Temporarly change name of dataframe due long name
+    # df = close_atr_weight_shares_selected_data
+
+    # Combine both dataframes, with all data and with just picked up days
+    close_atr_weight_shares_selected_data = pd.merge(selected_date_data, close_atr_weight_shares_data, how='left', on='Date')
+
+    # Added columns for previous shares number and difference in shares
+    for symbol in symbols:
+        close_atr_weight_shares_selected_data['Prev shares' + symbol] = close_atr_weight_shares_selected_data['Shares_' + symbol].shift(1)
+        close_atr_weight_shares_selected_data['Diff shares' + symbol] = close_atr_weight_shares_selected_data['Shares_' + symbol] - close_atr_weight_shares_selected_data['Prev shares' + symbol]
+
+    # Create empty column for average price and profit for each symbol
+    for symbol in symbols:
+        close_atr_weight_shares_selected_data['Avg price_' + symbol] = None
+        close_atr_weight_shares_selected_data['Profit_' + symbol] = None
+
+    # Set first average price is close price for each symbol
+    for symbol in symbols:
+        close_atr_weight_shares_selected_data.iloc[0, close_atr_weight_shares_selected_data.columns.get_loc('Avg price_' + symbol)] = close_atr_weight_shares_selected_data.iloc[0, close_atr_weight_shares_selected_data.columns.get_loc('Close_' + symbol)]
+
+    # How many rebalancing are in the testing period
+    number_of_days = range(0, len(close_atr_weight_shares_selected_data.index))
+
+    return close_atr_weight_shares_selected_data
 
 
 if __name__ == '__main__':

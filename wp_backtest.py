@@ -106,6 +106,8 @@ selecet_date_data = selecet_date_data.set_index('Date')
 # Combine both dataframes, with all data and with just picked up days
 close_shares_selected_date_data = pd.merge(selecet_date_data, close_shares_data, how='left', on='Date')
 
+# TODO: dokoncit
+
 # Added columns for previous shares number and difference in shares
 for symbol in symbols:
     close_shares_selected_date_data['Prev shares'+symbol] = close_shares_selected_date_data['Shares_'+symbol].shift(1)
