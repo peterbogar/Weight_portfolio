@@ -8,16 +8,16 @@ from datetime import datetime, date, timedelta
 import weight_portfolio
 
 # Symbols to do backtest on
-symbols = ['AAPL', 'MSFT']
+symbols = ['AAPL', 'MSFT', 'NVDA']
 
 # Time period in YEARS how long in history to do backtest
 # Last year is current- even if not finished yet
-test_period_y = 1
+test_period_y = 10
 
 # Time period in DAYS for ATR
 atr_period = 20
 
-account = 10000
+account = 100000
 
 
 def count_avg_price(fdiff, fclose_price, fshares, fprevious_shares, fprevious_avg_price):
@@ -150,4 +150,11 @@ output_data2 = output_data1.copy()
 output_data = output_data2.cumsum()
 output_data['Sum'] = output_data.sum(axis=1)
 
-print(output_data)
+print()
+for symbol in symbols:
+    gain = output_data['Profit_'+symbol].iloc[-1]/account/test_period_y*100
+    print('Average yearly profit for', symbol, 'is', round(gain, 2), '%')
+
+gain = output_data.iloc[-1, -1]/account/test_period_y*100
+print()
+print('Total average yearly profit is', round(gain, 2), '%')
