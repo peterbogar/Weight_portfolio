@@ -8,7 +8,7 @@ from datetime import datetime, date, timedelta
 import weight_portfolio
 
 # Symbols to do backtest on
-symbols = ['SLV', 'TLT', 'LIT', 'XLF']
+symbols = ['AAPL', 'MSFT']
 
 # Time period in YEARS how long in history to do backtest
 # Last year is current- even if not finished yet
@@ -42,7 +42,7 @@ def count_profit(fdiff, fclose_price, favg_price):
     # ak je rozdiel vacsi ako nula
     # 0
     if fdiff < 0:
-        profit = (favg_price-fclose_price)*fdiff
+        profit = round((favg_price-fclose_price)*fdiff, 2)
         return profit
     else:
         return 0
@@ -143,10 +143,11 @@ for symbol in symbols:
             avg_price = close_shares_selected_date_data.iloc[index, close_shares_selected_date_data.columns.get_loc('Avg price_'+symbol)]
             close_shares_selected_date_data.iloc[index, close_shares_selected_date_data.columns.get_loc('Profit_' + symbol)] = count_profit(diff, close_price, avg_price)
 
+# Very ugly way to select columns and count cumulative sumary
+output_data1 = close_shares_selected_date_data.filter(regex='Profit')
+output_data2 = output_data1.copy()
+# output_data.loc['Sum', :] = output_data.cumsum()
+output_data = output_data2.cumsum()
+output_data['Sum'] = output_data.sum(axis=1)
 
-# Choose columns to be in output dataframe
-# output_data = close_shares_selected_date_data.filter(regex='Shares|Profit')
-output_data = close_shares_selected_date_data.filter(regex='Profit')
-output_data.loc['Sum', :] = output_data.sum(axis=0)
-output_data.loc[:, 'Sum'] = output_data.sum(axis=1)
 print(output_data)
