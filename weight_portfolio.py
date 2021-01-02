@@ -86,13 +86,13 @@ def data_download_for_backtest(symbol, begin, end):
 
     # Data loading
     print('Loading ', symbol)
-    data_values = pd_web.DataReader(symbol, 'yahoo', begin, end)
+    downloaded_data = pd_web.DataReader(symbol, 'yahoo', begin, end)
 
     # Dataframe format
-    data_values.reset_index(inplace=True)        # Set date as index
-    data_values.set_index("Date", inplace=True)
-    data_values = data_values[['High', 'Low', 'Open', 'Close']]  # Cut off columns
-    data_values = data_values.round(2)  # Round price
+    downloaded_data.reset_index(inplace=True)        # Set date as index
+    downloaded_data.set_index("Date", inplace=True)
+    downloaded_data = downloaded_data[['High', 'Low', 'Open', 'Close']]  # Cut off columns
+    downloaded_data = downloaded_data.round(2)  # Round price
 
     # Dataframe with all prices
-    return data_values
+    return downloaded_data
