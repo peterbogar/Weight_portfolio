@@ -1,4 +1,5 @@
 import weight_portfolio
+import single_stock
 import pandas as pd
 from datetime import date, datetime, timedelta
 
@@ -227,9 +228,10 @@ def backtest_summary(fdata):
 
 if __name__ == '__main__':
 
-    backtest = backtest_atr_weight(symbols, test_period_y, atr_time_period, account)
+    # backtest = backtest_atr_weight(symbols, test_period_y, atr_time_period, account)
     # backtest_summary(backtest)
-    print(backtest_summary(backtest))
+    # print(backtest_summary(backtest))
+    single_stock.calculate_change('AAPL', 3)
 
     # output = current_atr_weight(symbols, atr_time_period, initial_account)
     #
