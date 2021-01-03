@@ -133,17 +133,14 @@ def backtest_atr_weight(fsymbols, ftest_period_y, fatr_time_period, faccount):
                 avg_price = df.iloc[index, df.columns.get_loc('Avg price_' + symbol)]
                 df.iloc[index, df.columns.get_loc('Profit_' + symbol)] = weight_portfolio.count_profit_for_backtest(diff, close_price, avg_price)
 
-    # # Very ugly way to select columns and count cumulative sumary
-    # output_data1 = close_shares_selected_date_data.filter(regex='Profit')
-    # output_data2 = output_data1.copy()
-    # # output_data.loc['Sum', :] = output_data.cumsum()
-    # output_data = output_data2.cumsum()
-    # output_data['Sum'] = output_data.sum(axis=1)
+    # Count cumulative profit for each symbol
+    for symbol in symbols:
+        df['Cum_profit_'+symbol] = df['Profit_'+symbol].cumsum()
 
     # Change dataframe name
-    close_atr_weight_shares_selected_data = df
+    close_atr_weight_shares_selected_cumprofit_data = df
 
-    return close_atr_weight_shares_selected_data
+    return close_atr_weight_shares_selected_cumprofit_data
 
 
 if __name__ == '__main__':
