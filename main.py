@@ -9,7 +9,7 @@ symbols = ['SPY', 'GLD']
 atr_time_period = 20
 
 # Time period in years to backtest
-test_period_y = 1
+test_period_y = 2
 
 # Sum of account in USD
 account = 10000
@@ -104,7 +104,7 @@ def backtest_atr_weight(fsymbols, ftest_period_y, fatr_time_period, faccount):
     for symbol in symbols:
         df['Avg price_' + symbol] = None
         df['Profit_' + symbol] = None
-        df['Cum profit_' + symbol] = None
+        # df['Cum profit_' + symbol] = None
 
     # Set first average price is close price for each symbol
     for symbol in symbols:
@@ -143,9 +143,18 @@ def backtest_atr_weight(fsymbols, ftest_period_y, fatr_time_period, faccount):
     return close_atr_weight_shares_selected_cumprofit_data
 
 
+def backtest_summary(fdata):
+    cum_profit_data = fdata.filter(regex='Cum').copy()
+    cum_profit_data['Sum profit'] = cum_profit_data.sum(axis=1)
+    # cum_profit_data.loc['Summary', :] = cum_profit_data.cumsum()
+
+    return cum_profit_data
+
+
 if __name__ == '__main__':
 
-    print(backtest_atr_weight(symbols, test_period_y, atr_time_period, account))
+    backtest = backtest_atr_weight(symbols, test_period_y, atr_time_period, account)
+    print(backtest_summary(backtest))
 
     # output = current_atr_weight(symbols, atr_time_period, initial_account)
     #
