@@ -1,143 +1,201 @@
 from datetime import date, timedelta
 import pandas_datareader.data as pd_web
+import pandas as pd
+
+# def data_download(symbol, time_period_days):
+#     # Load market data from Yahoo for last X days for one symbol
+#     # Input: one symbol, time period in days.
+#     # Output: Dataframe with High, Low, Open, Close for each day in last time_period_days
+#
+#     # Setup of today, begin, end
+#     today = date.today()
+#     # We dont need todays price, we need yeaterdays close price
+#     end = today - timedelta(days=1)
+#     begin = today - timedelta(days=(time_period_days + 1))
+#
+#     # Data loading
+#     print('Loading ', symbol)
+#     downloaded_data = pd_web.DataReader(symbol, 'yahoo', begin, end)
+#
+#     # If number of days is lower than time period+1 (for calculation of ATR we need previous day close
+#     # decrease begin date and load again
+#     while len(downloaded_data.index) < (time_period_days+1):
+#         begin = begin - timedelta(days=1)
+#         downloaded_data = pd_web.DataReader(symbol, 'yahoo', begin, end)
+#
+#     # Dataframe format
+#     downloaded_data.reset_index(inplace=True)        # Set date as index
+#     downloaded_data.set_index("Date", inplace=True)
+#     downloaded_data = downloaded_data[['High', 'Low', 'Open', 'Close']]  # Cut off columns
+#     downloaded_data = downloaded_data.round(2)  # Round price
+#
+#     # Output dataframe
+#     return downloaded_data
+# def count_atr(downloaded_data, atr_time_period):
+#     # Calculation of ATR for one symbol
+#     # Input: Dataframe with High, Low, Open, Close; ATR time period.
+#     # Output: Dataframe with close and ATR
+#
+#     # Creating new column: previous day close (pClose)
+#     downloaded_data['pClose'] = downloaded_data['Close'].shift(1)
+#     # New columns for formula
+#     downloaded_data['H-L'] = downloaded_data['High'] - downloaded_data['Low']
+#     downloaded_data['H-pClose'] = abs(downloaded_data['High'] - downloaded_data['pClose'])
+#     downloaded_data['L-pClose'] = abs(downloaded_data['Low'] - downloaded_data['pClose'])
+#     # Copy of dataframe with new columns
+#     values_atr = downloaded_data[['H-L', 'H-pClose', 'L-pClose']].copy()
+#     # Calculating True Range- highest value of
+#     values_atr['TR'] = values_atr.max(axis=1, skipna=True)
+#     # Exponential moving average on True range- ATR
+#     # TODO: skontrolovat ci to dobre pocita EMA
+#     values_atr['ATR'] = values_atr['TR'].ewm(span=atr_time_period).mean().round(2)
+#
+#     # Return last value of ATR
+#     # return values_atr.iloc[-1][-1]  # commented due to backtest
+#
+#     # Create output dataframe with close price+ATR
+#     close_atr_data = downloaded_data[['Close']].copy()
+#     close_atr_data['ATR'] = values_atr['ATR']
+#
+#     return close_atr_data
+# def count_weight_shares(close_atr_data_all, account):
+#     # Calculation weight based on ATR, higher ATR is lower weight
+#     # Input: Dataframe with prices and ATR for all symbols, account
+#     # Output: Dataframe with prices, ATR, weight, number of shares for all symbol
+#
+#     sum_atr = close_atr_data_all['ATR'].sum()
+#     # Calculation weight, formula= (1-ATR/Sum of ATRs)/(number of symbols -1)
+#     close_atr_data_all['Weight'] = ((1 - close_atr_data_all['ATR'] / sum_atr) / (len(close_atr_data_all.index) - 1)).round(3)
+#     # Number of shares based on weight, current price and account
+#     close_atr_data_all['Shares'] = (close_atr_data_all['Weight'] * account / close_atr_data_all['Close']).round(2)
+#
+#     symbol_close_atr_weight_shares_data = close_atr_data_all
+#
+#     # Return dataframe with: Symbol, Price, ATR, Weight, Shares
+#     return symbol_close_atr_weight_shares_data
+# def data_download_for_backtest(symbol, begin, end):
+#     # Load market data from Yahoo.
+#     # Input: one symbol, start year, end year
+#     # Output: dataframe with current prices
+#
+#     # Data loading
+#     print('Loading ', symbol)
+#     downloaded_data = pd_web.DataReader(symbol, 'yahoo', begin, end)
+#
+#     # Dataframe format
+#     downloaded_data.reset_index(inplace=True)        # Set date as index
+#     downloaded_data.set_index("Date", inplace=True)
+#     downloaded_data = downloaded_data[['High', 'Low', 'Open', 'Close']]  # Cut off columns
+#     downloaded_data = downloaded_data.round(2)  # Round price
+#
+#     # Dataframe with all prices
+#     return downloaded_data
+# def count_weight_shares_for_backtest(symbols, close_atr_data, account):
+#     # TODO: menitelny selected date
+#     # Count weight and shares number
+#     for symbol in symbols:
+#         # Calculation weight, formula= (1-ATR/Sum of ATRs)/(number of symbols -1)
+#         close_atr_data['Weight_' + symbol] = (
+#                     (1 - close_atr_data['ATR_' + symbol] / close_atr_data['ATR_sum']) / (len(symbols) - 1)).round(3)
+#         # Number of shares based on weight, current price and account
+#         # zaokruhkenie je matematicke, nie na nmensie cislo
+#         close_atr_data['Shares_' + symbol] = (
+#                     close_atr_data['Weight_' + symbol] * account / close_atr_data['Close_' + symbol]).round(0)
+#
+#     close_atr_weight_shares_data = close_atr_data
+#
+#     return close_atr_weight_shares_data
+# def count_avg_price_for_backtest(fdiff, fclose_price, fshares, fprevious_shares, fprevious_avg_price):
+#     # Funkicia pocita average cenu
+#     # Variables starts with F because of warning message
+#     # ak je dif vacsi ako nula
+#     # (cena * roziel + pred suma akci * pred avg cena) / nova suma akci
+#     # ak je rozdiel 0 alebo menej ako nula
+#     # predchadzjauca avg price
+#     if fdiff > 0:
+#         favg_price = ((fclose_price*fdiff)+(fprevious_shares*fprevious_avg_price))/fshares
+#         return favg_price
+#     else:
+#         return fprevious_avg_price
+# def count_profit_for_backtest(fdiff, fclose_price, favg_price):
+#     # Funkcia pocita profit
+#     # Variables starts with F because of warning message
+#     # ak je rozdiel akci mensi ako nula
+#     # (avg cena-cena) * rozdiel
+#     # ak je rozdiel vacsi ako nula
+#     # 0
+#     if fdiff < 0:
+#         profit = round((favg_price-fclose_price)*fdiff, 2)
+#         return profit
+#     else:
+#         return 0
 
 
-def data_download(symbol, time_period_days):
-    # Load market data from Yahoo for last X days for one symbol
-    # Input: one symbol, time period in days.
-    # Output: Dataframe with High, Low, Open, Close for each day in last time_period_days
+def data_download(symbol, download_begin, download_end, atr_period_days):
+    # Function to download price data for symbol for specified date window
+    # Usage: data_download('SPY', '2019-02-03', '2020-06-01')
+    # Output [0]: all prices
+    # Output [1]: close price with column name=symbol
 
-    # Setup of today, begin, end
-    today = date.today()
-    # We dont need todays price, we need yeaterdays close price
-    end = today - timedelta(days=1)
-    begin = today - timedelta(days=(time_period_days + 1))
-
-    # Data loading
     print('Loading ', symbol)
-    downloaded_data = pd_web.DataReader(symbol, 'yahoo', begin, end)
+    df_all_prices = pd_web.DataReader(symbol, 'yahoo', download_begin, download_end)
 
-    # If number of days is lower than time period+1 (for calculation of ATR we need previous day close
+    # If number of days is lower than ATR time period+1 (for calculation of ATR we need previous day close)
     # decrease begin date and load again
-    while len(downloaded_data.index) < (time_period_days+1):
-        begin = begin - timedelta(days=1)
-        downloaded_data = pd_web.DataReader(symbol, 'yahoo', begin, end)
+    while len(df_all_prices.index) < (atr_period_days+1):
+        download_begin = download_begin - timedelta(days=1)
+        df_all_prices = pd_web.DataReader(symbol, 'yahoo', download_begin, download_end)
 
-    # Dataframe format
-    downloaded_data.reset_index(inplace=True)        # Set date as index
-    downloaded_data.set_index("Date", inplace=True)
-    downloaded_data = downloaded_data[['High', 'Low', 'Open', 'Close']]  # Cut off columns
-    downloaded_data = downloaded_data.round(2)  # Round price
+    # Formating output
+    df_all_prices = df_all_prices.round(2)
+    df_close = pd.DataFrame()
+    df_close[symbol+'_Close'] = df_all_prices['Close']
 
-    # Output dataframe
-    return downloaded_data
+    return df_all_prices, df_close
 
 
-def count_atr(downloaded_data, atr_time_period):
-    # Calculation of ATR for one symbol
-    # Input: Dataframe with High, Low, Open, Close; ATR time period.
-    # Output: Dataframe with close and ATR
+def atr(symbol, df_all_prices, atr_period_days):
+    # Function to calculate ATR on close prices for the period
 
-    # Creating new column: previous day close (pClose)
-    downloaded_data['pClose'] = downloaded_data['Close'].shift(1)
+    # New column: previous day close (pClose)
+    df_all_prices['pClose'] = df_all_prices['Close'].shift(1)
     # New columns for formula
-    downloaded_data['H-L'] = downloaded_data['High'] - downloaded_data['Low']
-    downloaded_data['H-pClose'] = abs(downloaded_data['High'] - downloaded_data['pClose'])
-    downloaded_data['L-pClose'] = abs(downloaded_data['Low'] - downloaded_data['pClose'])
-    # Copy of dataframe with new columns
-    values_atr = downloaded_data[['H-L', 'H-pClose', 'L-pClose']].copy()
+    df_all_prices['H-L'] = df_all_prices['High'] - df_all_prices['Low']
+    df_all_prices['H-pClose'] = abs(df_all_prices['High'] - df_all_prices['pClose'])
+    df_all_prices['L-pClose'] = abs(df_all_prices['Low'] - df_all_prices['pClose'])
+    # Extract new columns
+    df_true_range = df_all_prices[['H-L', 'H-pClose', 'L-pClose']].copy()
     # Calculating True Range- highest value of
-    values_atr['TR'] = values_atr.max(axis=1, skipna=True)
+    df_true_range['TR'] = df_true_range.max(axis=1, skipna=True)
     # Exponential moving average on True range- ATR
     # TODO: skontrolovat ci to dobre pocita EMA
-    values_atr['ATR'] = values_atr['TR'].ewm(span=atr_time_period).mean().round(2)
+    df_true_range['ATR'] = df_true_range['TR'].ewm(span=atr_period_days).mean().round(2)
 
-    # Return last value of ATR
-    # return values_atr.iloc[-1][-1]  # commented due to backtest
+    # Create output dataframe with ATR only
+    df_atr = pd.DataFrame()
+    df_atr[symbol+'_ATR'] = df_true_range['ATR']
 
-    # Create output dataframe with close price+ATR
-    close_atr_data = downloaded_data[['Close']].copy()
-    close_atr_data['ATR'] = values_atr['ATR']
-
-    return close_atr_data
+    return df_atr
 
 
-def count_weight_shares(close_atr_data_all, account):
-    # Calculation weight based on ATR, higher ATR is lower weight
-    # Input: Dataframe with prices and ATR for all symbols, account
-    # Output: Dataframe with prices, ATR, weight, number of shares for all symbol
-
-    sum_atr = close_atr_data_all['ATR'].sum()
-    # Calculation weight, formula= (1-ATR/Sum of ATRs)/(number of symbols -1)
-    close_atr_data_all['Weight'] = ((1 - close_atr_data_all['ATR'] / sum_atr) / (len(close_atr_data_all.index) - 1)).round(3)
-    # Number of shares based on weight, current price and account
-    close_atr_data_all['Shares'] = (close_atr_data_all['Weight'] * account / close_atr_data_all['Close']).round(2)
-
-    symbol_close_atr_weight_shares_data = close_atr_data_all
-
-    # Return dataframe with: Symbol, Price, ATR, Weight, Shares
-    return symbol_close_atr_weight_shares_data
+# def weight():
+    # # Calculation weight based on ATR, higher ATR is lower weight
+    #     # Input: Dataframe with prices and ATR for all symbols, account
+    #     # Output: Dataframe with prices, ATR, weight, number of shares for all symbol
+    #
+    #     sum_atr = close_atr_data_all['ATR'].sum()
+    #     # Calculation weight, formula= (1-ATR/Sum of ATRs)/(number of symbols -1)
+    #     close_atr_data_all['Weight'] = ((1 - close_atr_data_all['ATR'] / sum_atr) / (len(close_atr_data_all.index) - 1)).round(3)
 
 
-def data_download_for_backtest(symbol, begin, end):
-    # Load market data from Yahoo.
-    # Input: one symbol, start year, end year
-    # Output: dataframe with current prices
-
-    # Data loading
-    print('Loading ', symbol)
-    downloaded_data = pd_web.DataReader(symbol, 'yahoo', begin, end)
-
-    # Dataframe format
-    downloaded_data.reset_index(inplace=True)        # Set date as index
-    downloaded_data.set_index("Date", inplace=True)
-    downloaded_data = downloaded_data[['High', 'Low', 'Open', 'Close']]  # Cut off columns
-    downloaded_data = downloaded_data.round(2)  # Round price
-
-    # Dataframe with all prices
-    return downloaded_data
+def shares():
+    pass
 
 
-def count_weight_shares_for_backtest(symbols, close_atr_data, account):
-    # TODO: menitelny selected date
-    # Count weight and shares number
-    for symbol in symbols:
-        # Calculation weight, formula= (1-ATR/Sum of ATRs)/(number of symbols -1)
-        close_atr_data['Weight_' + symbol] = (
-                    (1 - close_atr_data['ATR_' + symbol] / close_atr_data['ATR_sum']) / (len(symbols) - 1)).round(3)
-        # Number of shares based on weight, current price and account
-        # zaokruhkenie je matematicke, nie na nmensie cislo
-        close_atr_data['Shares_' + symbol] = (
-                    close_atr_data['Weight_' + symbol] * account / close_atr_data['Close_' + symbol]).round(0)
-
-    close_atr_weight_shares_data = close_atr_data
-
-    return close_atr_weight_shares_data
+def profit():
+    pass
 
 
-def count_avg_price_for_backtest(fdiff, fclose_price, fshares, fprevious_shares, fprevious_avg_price):
-    # Funkicia pocita average cenu
-    # Variables starts with F because of warning message
-    # ak je dif vacsi ako nula
-    # (cena * roziel + pred suma akci * pred avg cena) / nova suma akci
-    # ak je rozdiel 0 alebo menej ako nula
-    # predchadzjauca avg price
-    if fdiff > 0:
-        favg_price = ((fclose_price*fdiff)+(fprevious_shares*fprevious_avg_price))/fshares
-        return favg_price
-    else:
-        return fprevious_avg_price
+def drawdown():
+    pass
 
-
-def count_profit_for_backtest(fdiff, fclose_price, favg_price):
-    # Funkcia pocita profit
-    # Variables starts with F because of warning message
-    # ak je rozdiel akci mensi ako nula
-    # (avg cena-cena) * rozdiel
-    # ak je rozdiel vacsi ako nula
-    # 0
-    if fdiff < 0:
-        profit = round((favg_price-fclose_price)*fdiff, 2)
-        return profit
-    else:
-        return 0
