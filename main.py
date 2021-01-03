@@ -82,7 +82,7 @@ def backtest_atr_weight(fsymbols, ftest_period_y, fatr_time_period, faccount):
             select_date = datetime(y, m, 28)
 
             # If selected date is weekend, decrease the date, check it 4x
-            for i in [1, 2, 3, 4]:
+            for _ in [1, 2, 3, 4]:
                 try:
                     close_atr_weight_shares_data.loc[select_date]
                 except KeyError:
