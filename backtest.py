@@ -17,30 +17,29 @@ backtest_period_years = 10
 initial_account = 10000
 
 
-# def count_avg_price_for_backtest(fdiff, fclose_price, fshares, fprevious_shares, fprevious_avg_price):
-#     # Funkicia pocita average cenu
-#     # Variables starts with F because of warning message
-#     # ak je dif vacsi ako nula
-#     # (cena * roziel + pred suma akci * pred avg cena) / nova suma akci
-#     # ak je rozdiel 0 alebo menej ako nula
-#     # predchadzjauca avg price
-#     if fdiff > 0:
-#         favg_price = ((fclose_price*fdiff)+(fprevious_shares*fprevious_avg_price))/fshares
-#         return favg_price
-#     else:
-#         return fprevious_avg_price
-# def count_profit_for_backtest(fdiff, fclose_price, favg_price):
-#     # Funkcia pocita profit
-#     # Variables starts with F because of warning message
-#     # ak je rozdiel akci mensi ako nula
-#     # (avg cena-cena) * rozdiel
-#     # ak je rozdiel vacsi ako nula
-#     # 0
-#     if fdiff < 0:
-#         profit = round((favg_price-fclose_price)*fdiff, 2)
-#         return profit
-#     else:
-#         return 0
+def avg_price(shares_diff, close_price, shares, prev_shares, prev_avg_price):
+    # Funkicia pocita average cenu
+    # ak je rozdiel vacsi ako nula
+    # (cena * roziel + pred suma akci * pred avg cena) / nova suma akci
+    # ak je rozdiel 0 alebo menej plati predchadzajuca avg price
+    if shares_diff > 0:
+        new_avg_price = ((close_price*shares_diff)+(prev_shares*prev_avg_price))/shares
+        return new_avg_price
+    else:
+        return prev_avg_price
+
+
+def profit(shares_diff, close_price, new_avg_price):
+    # Funkcia pocita profit
+    # ak je rozdiel akci mensi ako nula
+    # (avg cena-cena) * rozdiel
+    # ak je rozdiel vacsi ako nula
+    # 0
+    if shares_diff < 0:
+        new_profit = round((new_avg_price-close_price)*shares_diff, 2)
+        return new_profit
+    else:
+        return 0
 
 
 df_atr_all = pd.DataFrame()
@@ -102,18 +101,35 @@ for symbol in symbols:
 
 df_output['Sum profit'] = None
 
-# Set first account value
+# Set first two account value, in first step we dont have any profit yet, so also next account will be initial
 df_output.iloc[0, df_output.columns.get_loc('Account')] = 10000
+df_output.iloc[1, df_output.columns.get_loc('Account')] = 10000
 
 # Set first shares and avg price for each symbol
 for symbol in symbols:
     first_close = df_output.iloc[0, df_output.columns.get_loc(symbol+'_Close')]
     first_weight = df_output.iloc[0, df_output.columns.get_loc(symbol+'_weight')]
     first_account = df_output.iloc[0, df_output.columns.get_loc('Account')]
-    df_output.iloc[0, df_output.columns.get_loc(symbol+'_shares')] = (first_account * first_weight / first_close).round(2)
+    df_output.iloc[0, df_output.columns.get_loc(symbol+'_shares')] = (first_account * first_weight / first_close).round(0)
     df_output.iloc[0, df_output.columns.get_loc(symbol + '_avg price')] = first_close
 
 
+row = 1
+for symbol in symbols:
+    temp_close = df_output.iloc[row, df_output.columns.get_loc(symbol+'_Close')]
+    temp_weight = df_output.iloc[row, df_output.columns.get_loc(symbol+'_weight')]
+    temp_account = df_output.iloc[row, df_output.columns.get_loc('Account')]
+    temp_shares = (temp_account * temp_weight / temp_close).round(0)
+    temp_prev_shares = df_output.iloc[row-1, df_output.columns.get_loc(symbol+'_shares')]
+    temp_shares_diff = temp_shares - temp_prev_shares
+    temp_prev_avg_price = df_output.iloc[row-1, df_output.columns.get_loc(symbol+'_avg price')]
+    temp_avg_price = avg_price(temp_shares_diff, temp_close, temp_shares, temp_prev_shares, temp_prev_avg_price)
+    temp_profit = profit(temp_shares_diff, temp_close, temp_avg_price)
+    df_output.iloc[row, df_output.columns.get_loc(symbol+'_shares')] = temp_shares
+    df_output.iloc[row, df_output.columns.get_loc(symbol + '_prev shares')] = temp_prev_shares
+    df_output.iloc[row, df_output.columns.get_loc(symbol + '_shares diff')] = temp_shares_diff
+    df_output.iloc[row, df_output.columns.get_loc(symbol + '_avg price')] = temp_avg_price
+    df_output.iloc[row, df_output.columns.get_loc(symbol + '_profit')] = temp_profit
 
 
 print(df_output)
