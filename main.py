@@ -1,7 +1,6 @@
 import pandas as pd
-from datetime import date, datetime, timedelta
-
-import weight_portfolio
+# from datetime import date, datetime, timedelta
+# import weight_portfolio
 # import single_stock
 # import backtest
 
@@ -20,22 +19,6 @@ backtest_period_years = 10
 
 # Sum of account in USD
 initial_account = 10000
-
-
-# def calculate_weight(symbols, atr_period_days):
-#     # Function to calculate relative weight for each symbol in symbols based on volatility/ ATR
-#     # Higher ATR = lower weight in portfolio
-#
-#     # Setup of today, begin, end
-#     today = date.today()
-#     # We dont need todays price, we need yesterdays close price
-#     download_end = today - timedelta(days=1)
-#     download_begin = today - timedelta(days=(atr_period_days + 1))
-#
-#     for symbol in symbols:
-#         weight_portfolio.data_download(symbol, download_begin, download_end, atr_period_days) # todo dokoncit
-#
-
 
 
 def main():

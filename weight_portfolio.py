@@ -92,11 +92,6 @@ def weight(symbols, df_atr_all):
     return df_weight_all
 
 
-def shares():
-
-    pass
-
-
 def profit():
     pass
 
