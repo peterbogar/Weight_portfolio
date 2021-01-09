@@ -22,24 +22,24 @@ backtest_period_years = 10
 initial_account = 10000
 
 
-def calculate_weight(symbols, atr_period_days):
-    # Function to calculate relative weight for each symbol in symbols based on volatility/ ATR
-    # Higher ATR = lower weight in portfolio
-
-    # Setup of today, begin, end
-    today = date.today()
-    # We dont need todays price, we need yesterdays close price
-    download_end = today - timedelta(days=1)
-    download_begin = today - timedelta(days=(atr_period_days + 1))
-
-    for symbol in symbols:
-        weight_portfolio.data_download(symbol, download_begin, download_end, atr_period_days) # todo dokoncit
-
+# def calculate_weight(symbols, atr_period_days):
+#     # Function to calculate relative weight for each symbol in symbols based on volatility/ ATR
+#     # Higher ATR = lower weight in portfolio
+#
+#     # Setup of today, begin, end
+#     today = date.today()
+#     # We dont need todays price, we need yesterdays close price
+#     download_end = today - timedelta(days=1)
+#     download_begin = today - timedelta(days=(atr_period_days + 1))
+#
+#     for symbol in symbols:
+#         weight_portfolio.data_download(symbol, download_begin, download_end, atr_period_days) # todo dokoncit
+#
 
 
 
 def main():
-    calculate_weight(symbols, atr_period_days)
+    pass
 
 
 # def current_atr_weight(fsymbols, fatr_time_period, faccount):
