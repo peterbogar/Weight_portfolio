@@ -106,7 +106,7 @@ for symbol in symbols:
     df_output[symbol+'_profit'] = 0
     df_output[symbol + '_cum_profit'] = 0
 df_output['Sum_profit'] = 0
-df_output['Cum_Sum_profit'] = 0
+df_output['Sum_cum_profit'] = 0
 
 # Set first shares and avg price for each symbol
 for symbol in symbols:
@@ -147,39 +147,13 @@ for symbol in symbols:
     df_output[symbol+'_cum_profit'] = df_output[symbol+'_profit'].cumsum()
 
 # Calculate cumulative summary profit
-df_output['Cum_Sum_profit'] = df_output['Sum_profit'].cumsum()
+df_output['Sum_cum_profit'] = df_output['Sum_profit'].cumsum()
 
-
-# Add new column Peak and Drawdown for each symbol, first row is 0
+# Drawdown for each symbol and Summary too
+symbols = symbols + ['Sum']
 for symbol in symbols:
-    df_output[symbol+'_profit_peak'] = 0
-    df_output[symbol+'_DD%'] = 0
-
-# Peak in profit for symbol
-for symbol in symbols:
-    # Column- symbol
-    column_profit = df_output.columns.get_loc(symbol+'_cum_profit')
-    column_peak = df_output.columns.get_loc(symbol+'_profit_peak')
-    column_dd = df_output.columns.get_loc(symbol+'_DD%')
-
-    # Row- index
-    for row in number_of_days:
-        curr_profit = df_output.iloc[row, column_profit]
-        curr_peak = df_output.iloc[row, column_peak]
-        prev_peak = df_output.iloc[row - 1, column_peak]
-        # Skip first row
-        if row == 0:
-            pass
-        elif curr_profit > prev_peak:
-            curr_peak = curr_profit
-        else:
-            curr_peak = prev_peak
-        df_output.loc[df_output.index[row], symbol+'_profit_peak'] = curr_peak
-
-        if curr_peak == 0:
-            curr_dd = 0
-        else:
-            curr_dd = (curr_profit - curr_peak)/curr_peak*100
-        df_output.loc[df_output.index[row], symbol+'_DD%'] = round(curr_dd, 2)
+    df_cum_profit = df_output.filter(regex=symbol+'_cum_profit')
+    df_dd = weight_portfolio.drawdown(symbol, df_cum_profit)
+    df_output = pd.merge(df_output, df_dd, how='left', on='Date')
 
 print(df_output)

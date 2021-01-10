@@ -64,3 +64,48 @@ def weight(symbols, df_atr_all):
 
     df_weight_all = df_atr_all.filter(regex='weight')
     return df_weight_all
+
+
+def drawdown(symbol, df_cum_profit):
+    # Calculate drawdown for one symbol
+    # Input: symbol name, dataframe with cumulative profit
+    # Output: dataframe with drawdown
+
+    # We will work with copy of the input dataframe
+    df_profit = df_cum_profit.copy()
+
+    # Numbers of days in backtest period (index)
+    number_of_days = range(0, len(df_profit.index))
+
+    # Add new column Peak and Drawdown for each symbol, first row is 0
+    df_profit[symbol + '_profit_peak'] = 0
+    df_profit[symbol + '_DD%'] = 0
+
+    # Peak in profit for symbol
+    # Column- symbol
+    column_profit = df_profit.columns.get_loc(symbol + '_cum_profit')
+    column_peak = df_profit.columns.get_loc(symbol + '_profit_peak')
+    # column_dd = df_profit.columns.get_loc(symbol + '_DD%')
+
+    # Row- index
+    for row in number_of_days:
+        curr_profit = df_profit.iloc[row, column_profit]
+        curr_peak = df_profit.iloc[row, column_peak]
+        prev_peak = df_profit.iloc[row - 1, column_peak]
+        # Skip first row
+        if row == 0:
+            pass
+        elif curr_profit > prev_peak:
+            curr_peak = curr_profit
+        else:
+            curr_peak = prev_peak
+        df_profit.loc[df_profit.index[row], symbol + '_profit_peak'] = curr_peak
+
+        if curr_peak == 0:
+            curr_dd = 0
+        else:
+            curr_dd = (curr_profit - curr_peak) / curr_peak * 100
+        df_profit.loc[df_profit.index[row], symbol + '_DD%'] = round(curr_dd, 2)
+
+    df_dd = df_profit.filter(regex='DD')
+    return df_dd
