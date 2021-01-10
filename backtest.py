@@ -6,16 +6,16 @@ pd.set_option('display.max_columns', None)
 
 
 # List of symbols you want to use
-symbols = ['SPY', 'GLD']
+symbols = ['AAPL', 'TSLA', 'AMZN', 'FB']
 
 # Time period in days for ATR indicator
 atr_period_days = 20
 
 # Time period in years to backtest
-backtest_period_years = 2
+backtest_period_years = 12
 
 # Initial account in USD
-initial_account = 10000
+initial_account = 100000
 
 
 def avg_price(shares_diff, close_price, shares, prev_shares, prev_avg_price):
@@ -157,17 +157,35 @@ for symbol in symbols:
     df_output_raw = pd.merge(df_output_raw, df_dd, how='left', on='Date')
 symbols.remove('Sum')
 
-print(df_output_raw)
 # Output summary
-df_output = pd.DataFrame({'Total gain %': [], 'Annual gain %': [], 'Max DD %': [], 'Max DD date': []}, index=[])
+df_output = pd.DataFrame({'': [], 'Total gain %': [], 'Annual gain %': [], 'Max DD %': [], 'Max DD date': []}, index=[])
 portfolio_total_gain = round(df_output_raw.iloc[-1, df_output_raw.columns.get_loc('Sum_cum_profit')]/initial_account*100, 2)
 portfolio_annual_gain = round(portfolio_total_gain/backtest_period_years, 2)
 portfolio_max_dd = df_output_raw['Sum_DD%'].min()
-portfolio_max_dd_date = df_output_raw['Sum_DD%'].idxmin()
+if portfolio_max_dd < 0:
+    portfolio_max_dd_date = df_output_raw['Sum_DD%'].idxmin()
+else:
+    portfolio_max_dd_date = None
 
+# Add summary vales for portfolio
+df_output = df_output.append({'': 'Portfolio', 'Total gain %': portfolio_total_gain, 'Annual gain %': portfolio_annual_gain, 'Max DD %': portfolio_max_dd, 'Max DD date': portfolio_max_dd_date}, ignore_index=True)
+
+# Add summary values for each symbol
 for symbol in symbols:
     total_gain = round(df_output_raw.iloc[-1, df_output_raw.columns.get_loc(symbol+'_cum_profit')] / initial_account * 100, 2)
     annual_gain = round(total_gain / backtest_period_years, 2)
     max_dd = df_output_raw[symbol+'_DD%'].min()
-    max_dd_date = df_output_raw[symbol+'_DD%'].idxmin()
+    if max_dd < 0:
+        max_dd_date = df_output_raw[symbol+'_DD%'].idxmin()
+    else:
+        max_dd_date = None
+    df_output = df_output.append({'': symbol, 'Total gain %': total_gain, 'Annual gain %': annual_gain, 'Max DD %': max_dd, 'Max DD date': max_dd_date}, ignore_index=True)
 
+print()
+print('Testing period from', download_begin, 'to', download_end)
+print('Initial account:', initial_account)
+print('Finish account:', round(df_output_raw.iloc[-1, df_output_raw.columns.get_loc('Account')], 0))
+print()
+print(df_output)
+
+# TODO: vypisat co sa prave pocita
