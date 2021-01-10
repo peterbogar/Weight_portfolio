@@ -4,6 +4,7 @@ from datetime import timedelta, datetime
 
 pd.set_option('display.max_columns', None)
 
+
 # List of symbols you want to use
 symbols = ['SPY', 'GLD']
 
@@ -11,9 +12,9 @@ symbols = ['SPY', 'GLD']
 atr_period_days = 20
 
 # Time period in years to backtest
-backtest_period_years = 10
+backtest_period_years = 2
 
-# Sum of account in USD
+# Initial account in USD
 initial_account = 10000
 
 
@@ -42,14 +43,18 @@ def profit(shares_diff, close_price, new_avg_price):
         return 0
 
 
+# Defining empty dataframes
 df_atr_all = pd.DataFrame()
 df_close_all = pd.DataFrame()
 df_weight_all = pd.DataFrame()
 
+download_end = datetime.today().year
+download_begin = download_end - backtest_period_years
+
 # Load data for each symbol and calculate ATR
 for symbol in symbols:
-    df_download = weight_portfolio.data_download(symbol, '2019-01-01', '2021-01-01', 20)
-    df_atr = weight_portfolio.atr(symbol, df_download[0], 20)
+    df_download = weight_portfolio.data_download(symbol, download_begin, download_end, atr_period_days)
+    df_atr = weight_portfolio.atr(symbol, df_download[0], atr_period_days)
     df_atr_all[symbol + '_ATR'] = df_atr[symbol + '_ATR']
     df_close = df_download[1]
     df_close_all[symbol + '_Close'] = df_close[symbol+'_Close']
@@ -58,14 +63,14 @@ for symbol in symbols:
 
 # Calculate weight for each symbol
 for row in range(0, len(df_atr_all.index)):
-    a = df_atr_all.iloc[row]
-    b = pd.DataFrame(a).transpose()
-    df_weight_all = df_weight_all.append(weight_portfolio.weight(symbols, b))
+    temp1 = df_atr_all.iloc[row]
+    temp2 = pd.DataFrame(temp1).transpose()
+    df_weight_all = df_weight_all.append(weight_portfolio.weight(symbols, temp2))
 # df_weight_all.to_excel('weight_all.xls')
 
-# TODO: prerobit na modifikovatelne
 # Time period for rebalancing, currently once a month
 # Pick up one day in each month, create new dataframe with just Date-index
+# TODO: prerobit na modifikovatelne
 df_some_date = pd.DataFrame({'Date': []})
 for y in range(2019, 2021):
     for m in range(1, 13):
@@ -111,11 +116,11 @@ for symbol in symbols:
     df_output.iloc[0, df_output.columns.get_loc(symbol+'_shares')] = (first_account * first_weight / first_close).round(0)
     df_output.iloc[0, df_output.columns.get_loc(symbol + '_avg_price')] = first_close
 
-# Numbers of days for backtest (index)
+# Numbers of days in backtest period (index)
 number_of_days = range(0, len(df_output.index))
 
 # Row by row
-#   symbol by symbol - calculate account, shares, avg price, profit, cum profit for each symbol
+#   symbol by symbol - calculate account, shares, avg price, profit, sum profit for each symbol
 for row in number_of_days:
     sum_profit = 0
     for symbol in symbols:
@@ -143,5 +148,38 @@ for symbol in symbols:
 
 # Calculate cumulative summary profit
 df_output['Cum_Sum_profit'] = df_output['Sum_profit'].cumsum()
+
+
+# Add new column Peak and Drawdown for each symbol, first row is 0
+for symbol in symbols:
+    df_output[symbol+'_profit_peak'] = 0
+    df_output[symbol+'_DD%'] = 0
+
+# Peak in profit for symbol
+for symbol in symbols:
+    # Column- symbol
+    column_profit = df_output.columns.get_loc(symbol+'_cum_profit')
+    column_peak = df_output.columns.get_loc(symbol+'_profit_peak')
+    column_dd = df_output.columns.get_loc(symbol+'_DD%')
+
+    # Row- index
+    for row in number_of_days:
+        curr_profit = df_output.iloc[row, column_profit]
+        curr_peak = df_output.iloc[row, column_peak]
+        prev_peak = df_output.iloc[row - 1, column_peak]
+        # Skip first row
+        if row == 0:
+            pass
+        elif curr_profit > prev_peak:
+            curr_peak = curr_profit
+        else:
+            curr_peak = prev_peak
+        df_output.loc[df_output.index[row], symbol+'_profit_peak'] = curr_peak
+
+        if curr_peak == 0:
+            curr_dd = 0
+        else:
+            curr_dd = (curr_profit - curr_peak)/curr_peak*100
+        df_output.loc[df_output.index[row], symbol+'_DD%'] = round(curr_dd, 2)
 
 print(df_output)
