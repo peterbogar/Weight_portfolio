@@ -95,65 +95,79 @@ df_some_price = pd.merge(df_some_date, df_close_all, how='left', on='Date')
 df_some_weight = pd.merge(df_some_price, df_weight_all, how='left', on='Date')
 
 # Rename dataframe
-df_output = df_some_weight
+df_output_raw = df_some_weight
 
 # Set empty columns
-df_output['Account'] = initial_account
+df_output_raw['Account'] = initial_account
 for symbol in symbols:
-    df_output[symbol+'_shares'] = 0
-    df_output[symbol+'_shares_diff'] = 0
-    df_output[symbol+'_avg_price'] = 0
-    df_output[symbol+'_profit'] = 0
-    df_output[symbol + '_cum_profit'] = 0
-df_output['Sum_profit'] = 0
-df_output['Sum_cum_profit'] = 0
+    df_output_raw[symbol + '_shares'] = 0
+    df_output_raw[symbol + '_shares_diff'] = 0
+    df_output_raw[symbol + '_avg_price'] = 0
+    df_output_raw[symbol + '_profit'] = 0
+    df_output_raw[symbol + '_cum_profit'] = 0
+df_output_raw['Sum_profit'] = 0
+df_output_raw['Sum_cum_profit'] = 0
 
 # Set first shares and avg price for each symbol
 for symbol in symbols:
-    first_close = df_output.iloc[0, df_output.columns.get_loc(symbol+'_Close')]
-    first_weight = df_output.iloc[0, df_output.columns.get_loc(symbol+'_weight')]
-    first_account = df_output.iloc[0, df_output.columns.get_loc('Account')]
-    df_output.iloc[0, df_output.columns.get_loc(symbol+'_shares')] = (first_account * first_weight / first_close).round(0)
-    df_output.iloc[0, df_output.columns.get_loc(symbol + '_avg_price')] = first_close
+    first_close = df_output_raw.iloc[0, df_output_raw.columns.get_loc(symbol + '_Close')]
+    first_weight = df_output_raw.iloc[0, df_output_raw.columns.get_loc(symbol + '_weight')]
+    first_account = df_output_raw.iloc[0, df_output_raw.columns.get_loc('Account')]
+    df_output_raw.iloc[0, df_output_raw.columns.get_loc(symbol + '_shares')] = (first_account * first_weight / first_close).round(0)
+    df_output_raw.iloc[0, df_output_raw.columns.get_loc(symbol + '_avg_price')] = first_close
 
 # Numbers of days in backtest period (index)
-number_of_days = range(0, len(df_output.index))
+number_of_days = range(0, len(df_output_raw.index))
 
 # Row by row
 #   symbol by symbol - calculate account, shares, avg price, profit, sum profit for each symbol
 for row in number_of_days:
     sum_profit = 0
     for symbol in symbols:
-        row_close = df_output.iloc[row, df_output.columns.get_loc(symbol+'_Close')]
-        row_weight = df_output.iloc[row, df_output.columns.get_loc(symbol+'_weight')]
-        row_account = df_output.iloc[row, df_output.columns.get_loc('Account')]
+        row_close = df_output_raw.iloc[row, df_output_raw.columns.get_loc(symbol + '_Close')]
+        row_weight = df_output_raw.iloc[row, df_output_raw.columns.get_loc(symbol + '_weight')]
+        row_account = df_output_raw.iloc[row, df_output_raw.columns.get_loc('Account')]
         row_shares = (row_account * row_weight / row_close).round(0)
-        row_prev_shares = df_output.iloc[row-1, df_output.columns.get_loc(symbol+'_shares')]
+        row_prev_shares = df_output_raw.iloc[row - 1, df_output_raw.columns.get_loc(symbol + '_shares')]
         row_shares_diff = row_shares - row_prev_shares
-        row_prev_avg_price = df_output.iloc[row-1, df_output.columns.get_loc(symbol+'_avg_price')]
+        row_prev_avg_price = df_output_raw.iloc[row - 1, df_output_raw.columns.get_loc(symbol + '_avg_price')]
         row_avg_price = round(avg_price(row_shares_diff, row_close, row_shares, row_prev_shares, row_prev_avg_price), 2)
         row_profit = profit(row_shares_diff, row_close, row_avg_price)
-        df_output.iloc[row, df_output.columns.get_loc(symbol+'_shares')] = row_shares
-        df_output.iloc[row, df_output.columns.get_loc(symbol + '_shares_diff')] = row_shares_diff
-        df_output.iloc[row, df_output.columns.get_loc(symbol + '_avg_price')] = row_avg_price
-        df_output.iloc[row, df_output.columns.get_loc(symbol + '_profit')] = row_profit
+        df_output_raw.iloc[row, df_output_raw.columns.get_loc(symbol + '_shares')] = row_shares
+        df_output_raw.iloc[row, df_output_raw.columns.get_loc(symbol + '_shares_diff')] = row_shares_diff
+        df_output_raw.iloc[row, df_output_raw.columns.get_loc(symbol + '_avg_price')] = row_avg_price
+        df_output_raw.iloc[row, df_output_raw.columns.get_loc(symbol + '_profit')] = row_profit
         sum_profit += row_profit
-        row_new_accouont = df_output.iloc[row-1, df_output.columns.get_loc('Account')] + sum_profit
-        df_output.iloc[row, df_output.columns.get_loc('Account')] = row_new_accouont
-    df_output.iloc[row, df_output.columns.get_loc('Sum_profit')] = sum_profit
+        row_new_accouont = df_output_raw.iloc[row - 1, df_output_raw.columns.get_loc('Account')] + sum_profit
+        df_output_raw.iloc[row, df_output_raw.columns.get_loc('Account')] = row_new_accouont
+    df_output_raw.iloc[row, df_output_raw.columns.get_loc('Sum_profit')] = sum_profit
 
 # Calculate cumulative profit for each symbol
 for symbol in symbols:
-    df_output[symbol+'_cum_profit'] = df_output[symbol+'_profit'].cumsum()
+    df_output_raw[symbol + '_cum_profit'] = df_output_raw[symbol + '_profit'].cumsum()
 
 # Calculate cumulative summary profit
-df_output['Sum_cum_profit'] = df_output['Sum_profit'].cumsum()
+df_output_raw['Sum_cum_profit'] = df_output_raw['Sum_profit'].cumsum()
 
 # Drawdown for each symbol and Summary too
 symbols = symbols + ['Sum']
 for symbol in symbols:
-    df_cum_profit = df_output.filter(regex=symbol+'_cum_profit')
+    df_cum_profit = df_output_raw.filter(regex=symbol + '_cum_profit')
     df_dd = weight_portfolio.drawdown(symbol, df_cum_profit)
-    df_output = pd.merge(df_output, df_dd, how='left', on='Date')
+    df_output_raw = pd.merge(df_output_raw, df_dd, how='left', on='Date')
+symbols.remove('Sum')
 
-print(df_output)
+print(df_output_raw)
+# Output summary
+df_output = pd.DataFrame({'Total gain %': [], 'Annual gain %': [], 'Max DD %': [], 'Max DD date': []}, index=[])
+portfolio_total_gain = round(df_output_raw.iloc[-1, df_output_raw.columns.get_loc('Sum_cum_profit')]/initial_account*100, 2)
+portfolio_annual_gain = round(portfolio_total_gain/backtest_period_years, 2)
+portfolio_max_dd = df_output_raw['Sum_DD%'].min()
+portfolio_max_dd_date = df_output_raw['Sum_DD%'].idxmin()
+
+for symbol in symbols:
+    total_gain = round(df_output_raw.iloc[-1, df_output_raw.columns.get_loc(symbol+'_cum_profit')] / initial_account * 100, 2)
+    annual_gain = round(total_gain / backtest_period_years, 2)
+    max_dd = df_output_raw[symbol+'_DD%'].min()
+    max_dd_date = df_output_raw[symbol+'_DD%'].idxmin()
+
