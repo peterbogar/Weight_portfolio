@@ -53,13 +53,15 @@ for symbol in symbols:
     df_atr_all[symbol + '_ATR'] = df_atr[symbol + '_ATR']
     df_close = df_download[1]
     df_close_all[symbol + '_Close'] = df_close[symbol+'_Close']
+# df_atr_all.to_excel('atr_all.xls')
+# df_close_all.to_excel('close_all.xls')
 
 # Calculate weight for each symbol
 for row in range(0, len(df_atr_all.index)):
     a = df_atr_all.iloc[row]
     b = pd.DataFrame(a).transpose()
     df_weight_all = df_weight_all.append(weight_portfolio.weight(symbols, b))
-
+# df_weight_all.to_excel('weight_all.xls')
 
 # TODO: prerobit na modifikovatelne
 # Time period for rebalancing, currently once a month
@@ -82,7 +84,7 @@ for y in range(2019, 2021):
 df_some_date = df_some_date.set_index('Date')
 df_weight_all.index.name = 'Date'
 
-# Combine some date dataframe and close price dataframe
+# Combine some_date dataframe and close price dataframe
 df_some_price = pd.merge(df_some_date, df_close_all, how='left', on='Date')
 # Combine this dataframe with weight dataframe
 df_some_weight = pd.merge(df_some_price, df_weight_all, how='left', on='Date')
@@ -91,21 +93,15 @@ df_some_weight = pd.merge(df_some_price, df_weight_all, how='left', on='Date')
 df_output = df_some_weight
 
 # Set empty columns
-df_output['Account'] = 10000
-
+df_output['Account'] = initial_account
 for symbol in symbols:
     df_output[symbol+'_shares'] = 0
-    # df_output[symbol+'_prev shares'] = 0
-    df_output[symbol+'_shares diff'] = 0
-    df_output[symbol+'_avg price'] = 0
+    df_output[symbol+'_shares_diff'] = 0
+    df_output[symbol+'_avg_price'] = 0
     df_output[symbol+'_profit'] = 0
-
-df_output['Sum profit'] = 0
-
-
-# Set first two account value, in first step we dont have any profit yet, so also next account will be initial
-df_output.iloc[0, df_output.columns.get_loc('Account')] = 10000
-df_output.iloc[1, df_output.columns.get_loc('Account')] = 10000
+    df_output[symbol + '_cum_profit'] = 0
+df_output['Sum_profit'] = 0
+df_output['Cum_Sum_profit'] = 0
 
 # Set first shares and avg price for each symbol
 for symbol in symbols:
@@ -113,8 +109,7 @@ for symbol in symbols:
     first_weight = df_output.iloc[0, df_output.columns.get_loc(symbol+'_weight')]
     first_account = df_output.iloc[0, df_output.columns.get_loc('Account')]
     df_output.iloc[0, df_output.columns.get_loc(symbol+'_shares')] = (first_account * first_weight / first_close).round(0)
-    df_output.iloc[0, df_output.columns.get_loc(symbol + '_avg price')] = first_close
-
+    df_output.iloc[0, df_output.columns.get_loc(symbol + '_avg_price')] = first_close
 
 # Numbers of days for backtest (index)
 number_of_days = range(0, len(df_output.index))
@@ -130,44 +125,23 @@ for row in number_of_days:
         row_shares = (row_account * row_weight / row_close).round(0)
         row_prev_shares = df_output.iloc[row-1, df_output.columns.get_loc(symbol+'_shares')]
         row_shares_diff = row_shares - row_prev_shares
-        row_prev_avg_price = df_output.iloc[row-1, df_output.columns.get_loc(symbol+'_avg price')]
+        row_prev_avg_price = df_output.iloc[row-1, df_output.columns.get_loc(symbol+'_avg_price')]
         row_avg_price = round(avg_price(row_shares_diff, row_close, row_shares, row_prev_shares, row_prev_avg_price), 2)
         row_profit = profit(row_shares_diff, row_close, row_avg_price)
         df_output.iloc[row, df_output.columns.get_loc(symbol+'_shares')] = row_shares
-        # df_output.iloc[row, df_output.columns.get_loc(symbol + '_prev shares')] = row_prev_shares
-        df_output.iloc[row, df_output.columns.get_loc(symbol + '_shares diff')] = row_shares_diff
-        df_output.iloc[row, df_output.columns.get_loc(symbol + '_avg price')] = row_avg_price
+        df_output.iloc[row, df_output.columns.get_loc(symbol + '_shares_diff')] = row_shares_diff
+        df_output.iloc[row, df_output.columns.get_loc(symbol + '_avg_price')] = row_avg_price
         df_output.iloc[row, df_output.columns.get_loc(symbol + '_profit')] = row_profit
         sum_profit += row_profit
         row_new_accouont = df_output.iloc[row-1, df_output.columns.get_loc('Account')] + sum_profit
         df_output.iloc[row, df_output.columns.get_loc('Account')] = row_new_accouont
-    df_output.iloc[row, df_output.columns.get_loc('Sum profit')] = sum_profit
+    df_output.iloc[row, df_output.columns.get_loc('Sum_profit')] = sum_profit
 
+# Calculate cumulative profit for each symbol
+for symbol in symbols:
+    df_output[symbol+'_cum_profit'] = df_output[symbol+'_profit'].cumsum()
 
+# Calculate cumulative summary profit
+df_output['Cum_Sum_profit'] = df_output['Sum_profit'].cumsum()
 
 print(df_output)
-
-
-
-# # How many rebalancing are in the testing period
-# number_of_days = range(0, len(df.index))
-#
-# # For each symbol count average price and profit in separate functions
-# for symbol in symbols:
-#     for index in number_of_days:
-#         if index == 0:
-#             pass
-#         else:
-#             # Set variables for function 'count average price' and 'count profit'
-#             diff = df.iloc[index, df.columns.get_loc('Diff shares' + symbol)]
-#             close_price = df.iloc[index, df.columns.get_loc('Close_' + symbol)]
-#             shares = df.iloc[index, df.columns.get_loc('Shares_' + symbol)]
-#             previous_shares = df.iloc[index, df.columns.get_loc('Prev shares' + symbol)]
-#             previous_avg_price = df.iloc[index - 1, df.columns.get_loc('Avg price_' + symbol)]
-#
-#             # Count average price in function
-#             df.iloc[index, df.columns.get_loc('Avg price_' + symbol)] = weight_portfolio.count_avg_price_for_backtest(diff, close_price, shares, previous_shares, previous_avg_price)
-#
-#             # Count profit in function
-#             avg_price = df.iloc[index, df.columns.get_loc('Avg price_' + symbol)]
-#             df.iloc[index, df.columns.get_loc('Profit_' + symbol)] = weight_portfolio.count_profit_for_backtest(diff, close_price, avg_price)
