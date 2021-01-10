@@ -5,7 +5,7 @@ from datetime import timedelta, datetime
 pd.set_option('display.max_columns', None)
 
 # List of symbols you want to use
-symbols = ['SPY', 'GLD', 'XLE']
+symbols = ['SPY', 'GLD']
 
 # Time period in days for ATR indicator
 atr_period_days = 20
@@ -91,15 +91,17 @@ df_some_weight = pd.merge(df_some_price, df_weight_all, how='left', on='Date')
 df_output = df_some_weight
 
 # Set empty columns
-df_output['Account'] = None
-for symbol in symbols:
-    df_output[symbol+'_shares'] = None
-    df_output[symbol+'_prev shares'] = None
-    df_output[symbol+'_shares diff'] = None
-    df_output[symbol+'_avg price'] = None
-    df_output[symbol+'_profit'] = None
+df_output['Account'] = 10000
 
-df_output['Sum profit'] = None
+for symbol in symbols:
+    df_output[symbol+'_shares'] = 0
+    # df_output[symbol+'_prev shares'] = 0
+    df_output[symbol+'_shares diff'] = 0
+    df_output[symbol+'_avg price'] = 0
+    df_output[symbol+'_profit'] = 0
+
+df_output['Sum profit'] = 0
+
 
 # Set first two account value, in first step we dont have any profit yet, so also next account will be initial
 df_output.iloc[0, df_output.columns.get_loc('Account')] = 10000
@@ -114,42 +116,39 @@ for symbol in symbols:
     df_output.iloc[0, df_output.columns.get_loc(symbol + '_avg price')] = first_close
 
 
-row = 1
-for symbol in symbols:
-    temp_close = df_output.iloc[row, df_output.columns.get_loc(symbol+'_Close')]
-    temp_weight = df_output.iloc[row, df_output.columns.get_loc(symbol+'_weight')]
-    temp_account = df_output.iloc[row, df_output.columns.get_loc('Account')]
-    temp_shares = (temp_account * temp_weight / temp_close).round(0)
-    temp_prev_shares = df_output.iloc[row-1, df_output.columns.get_loc(symbol+'_shares')]
-    temp_shares_diff = temp_shares - temp_prev_shares
-    temp_prev_avg_price = df_output.iloc[row-1, df_output.columns.get_loc(symbol+'_avg price')]
-    temp_avg_price = avg_price(temp_shares_diff, temp_close, temp_shares, temp_prev_shares, temp_prev_avg_price)
-    temp_profit = profit(temp_shares_diff, temp_close, temp_avg_price)
-    df_output.iloc[row, df_output.columns.get_loc(symbol+'_shares')] = temp_shares
-    df_output.iloc[row, df_output.columns.get_loc(symbol + '_prev shares')] = temp_prev_shares
-    df_output.iloc[row, df_output.columns.get_loc(symbol + '_shares diff')] = temp_shares_diff
-    df_output.iloc[row, df_output.columns.get_loc(symbol + '_avg price')] = temp_avg_price
-    df_output.iloc[row, df_output.columns.get_loc(symbol + '_profit')] = temp_profit
+# Numbers of days for backtest (index)
+number_of_days = range(0, len(df_output.index))
+
+# Row by row
+#   symbol by symbol - calculate account, shares, avg price, profit, cum profit for each symbol
+for row in number_of_days:
+    sum_profit = 0
+    for symbol in symbols:
+        row_close = df_output.iloc[row, df_output.columns.get_loc(symbol+'_Close')]
+        row_weight = df_output.iloc[row, df_output.columns.get_loc(symbol+'_weight')]
+        row_account = df_output.iloc[row, df_output.columns.get_loc('Account')]
+        row_shares = (row_account * row_weight / row_close).round(0)
+        row_prev_shares = df_output.iloc[row-1, df_output.columns.get_loc(symbol+'_shares')]
+        row_shares_diff = row_shares - row_prev_shares
+        row_prev_avg_price = df_output.iloc[row-1, df_output.columns.get_loc(symbol+'_avg price')]
+        row_avg_price = round(avg_price(row_shares_diff, row_close, row_shares, row_prev_shares, row_prev_avg_price), 2)
+        row_profit = profit(row_shares_diff, row_close, row_avg_price)
+        df_output.iloc[row, df_output.columns.get_loc(symbol+'_shares')] = row_shares
+        # df_output.iloc[row, df_output.columns.get_loc(symbol + '_prev shares')] = row_prev_shares
+        df_output.iloc[row, df_output.columns.get_loc(symbol + '_shares diff')] = row_shares_diff
+        df_output.iloc[row, df_output.columns.get_loc(symbol + '_avg price')] = row_avg_price
+        df_output.iloc[row, df_output.columns.get_loc(symbol + '_profit')] = row_profit
+        sum_profit += row_profit
+        row_new_accouont = df_output.iloc[row-1, df_output.columns.get_loc('Account')] + sum_profit
+        df_output.iloc[row, df_output.columns.get_loc('Account')] = row_new_accouont
+    df_output.iloc[row, df_output.columns.get_loc('Sum profit')] = sum_profit
+
 
 
 print(df_output)
 
 
-# Added columns for previous shares number and difference in shares
-# for symbol in symbols:
-#     df['Prev shares' + symbol] = df['Shares_' + symbol].shift(1)
-#     df['Diff shares' + symbol] = df['Shares_' + symbol] - df['Prev shares' + symbol]
-#
-# # Create empty column for average price and profit for each symbol
-# for symbol in symbols:
-#     df['Avg price_' + symbol] = None
-#     df['Profit_' + symbol] = None
-#     # df['Cum profit_' + symbol] = None]
 
-# Set first average price is close price for each symbol
-# for symbol in symbols:
-#     df.iloc[0, df.columns.get_loc('Avg price_' + symbol)] = df.iloc[0, df.columns.get_loc('Close_' + symbol)]
-#
 # # How many rebalancing are in the testing period
 # number_of_days = range(0, len(df.index))
 #
